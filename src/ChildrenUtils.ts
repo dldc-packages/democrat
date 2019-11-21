@@ -10,10 +10,13 @@ import {
 import isPlainObject from 'is-plain-object';
 import { ComponentUtils } from './ComponentUtils';
 
+type TreeElementState = 'created' | 'stable' | 'updated' | 'removed';
+
 type TreeElementCommon = {
+  id: number;
   previous: TreeElement | null;
   value: any;
-  dirty: boolean;
+  state: TreeElementState;
 };
 
 type TreeElementObject = TreeElementCommon & {
@@ -33,17 +36,23 @@ export type TreeElement = TreeElementNull | TreeElementObject | TreeElementArray
 export const ChildrenUtils = {
   mount: mountChildren,
   update: updateChildren,
-  cleanupEffects,
-  cleanupLayoutEffects,
+  cleanup,
+  effects,
 };
+
+const nextId = (() => {
+  let id = 0;
+  return () => id++;
+})();
 
 function mountChildren(rawChildren: any, parent: Instance): TreeElement {
   if (rawChildren === null) {
     const item: TreeElementNull = {
+      id: nextId(),
       type: 'NULL',
       value: null,
       previous: null,
-      dirty: false,
+      state: 'created',
     };
     return item;
   }
@@ -55,23 +64,25 @@ function mountChildren(rawChildren: any, parent: Instance): TreeElement {
     });
     const value = ComponentUtils.render(rawChildren.component, rawChildren.props, instance, parent);
     const item: TreeElementChild = {
+      id: nextId(),
       type: 'CHILD',
       value,
       previous: null,
       element: rawChildren,
       instance,
-      dirty: true,
+      state: 'created',
     };
     return item;
   }
   if (Array.isArray(rawChildren)) {
     const children = rawChildren.map(item => mountChildren(item, parent));
     const item: TreeElementArray = {
+      id: nextId(),
       type: 'ARRAY',
       value: children.map(item => item.value),
       previous: null,
       children,
-      dirty: true,
+      state: 'created',
     };
     return item;
   }
@@ -81,11 +92,12 @@ function mountChildren(rawChildren: any, parent: Instance): TreeElement {
     });
     const value = mapObject(children, v => v.value);
     const item: TreeElementObject = {
+      id: nextId(),
       type: 'OBJECT',
       value: value,
       previous: null,
       children: children,
-      dirty: true,
+      state: 'created',
     };
     return item;
   }
@@ -93,168 +105,150 @@ function mountChildren(rawChildren: any, parent: Instance): TreeElement {
   throw new Error(`Invalid value in children`);
 }
 
-function cleanupEffects(tree: TreeElement) {
-  // cleanupEffectsInternal(tree, 'EFFECT');
-}
-
-function cleanupLayoutEffects(tree: TreeElement) {
-  // cleanupEffectsInternal(tree, 'LAYOUT_EFFECT');
-}
-
-// function unmountTree(tree: TreeElement, type: 'EFFECT' | 'LAYOUT_EFFECT') {
-//   if (tree.type === 'NULL') {
-//     return;
-//   }
-//   if (tree.type === 'CHILD') {
-//     runCleanupOfInstance(subItem.instance, instance, type, true);
-//   }
-// }
-
-// function cleanupEffectsInternal(tree: TreeElement, type: 'EFFECT' | 'LAYOUT_EFFECT') {
-//   if (tree.updated === false) {
-//     return;
-//   }
-//   if (tree.type === 'CHILD') {
-//     if (tree.previous) {
-//       cleanupEffectsInternal(tree.previous, type, true);
-
-//     }
-//   }
-// }
-
 /**
  * Returns
  *   1. The same reference if the structure is the same
  *      or a new reference if the struture has changed
  *   2. tree.updated if effects should run
  */
-function updateChildren(prevTree: TreeElement, rawChildren: any, parent: Instance): TreeElement {
-  if (prevTree.type === 'NULL') {
+function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): TreeElement {
+  if (tree.type === 'NULL') {
     if (rawChildren === null) {
-      return prevTree;
+      return tree;
     }
     const nextTree = mountChildren(rawChildren, parent);
     return nextTree;
   }
-  if (prevTree.type === 'CHILD') {
+  if (tree.type === 'CHILD') {
     if (
       isValidElement(rawChildren) &&
-      rawChildren.component === prevTree.element.component &&
-      rawChildren.key === prevTree.element.key
+      rawChildren.component === tree.element.component &&
+      rawChildren.key === tree.element.key
     ) {
       // This is an update of a component
-      const sameProps = objectShallowEqual(prevTree.element.props, rawChildren.props);
-      if (sameProps && prevTree.instance.dirty === false) {
-        // skip update because props are the same an the state hasn't changed (dirty === false)
-        return prevTree;
+      const sameProps = objectShallowEqual(tree.element.props, rawChildren.props);
+      if (sameProps && tree.instance.dirty === false) {
+        return tree;
       }
       // Re-render
       const value = ComponentUtils.render(
         rawChildren.component,
         rawChildren.props,
-        prevTree.instance,
+        tree.instance,
         parent
       );
       // update the tree
-      prevTree.element = rawChildren;
-      prevTree.value = value;
-      prevTree.dirty = true;
-      return prevTree;
+      tree.element = rawChildren;
+      tree.value = value;
+      tree.state = 'updated';
+      return tree;
     }
     // not the same type or not the same component
     // note: we don't need to set nextTree.updated because it's set by mountChildren;
     const nextTree = mountChildren(rawChildren, parent);
-    nextTree.previous = prevTree;
+    nextTree.previous = tree;
+    nextTree.previous.state = 'removed';
     return nextTree;
   }
-  if (prevTree.type === 'OBJECT') {
+  if (tree.type === 'OBJECT') {
     if (isPlainObject(rawChildren)) {
-      const sameKeys = sameObjectKeys(rawChildren, prevTree.children);
+      const sameKeys = sameObjectKeys(rawChildren, tree.children);
       if (sameKeys) {
         // the object has the same structure => update tree object
-        let dirty = false;
+        let updated = false;
         Object.keys(rawChildren).forEach(key => {
-          const newItem = updateChildren(prevTree.children[key], rawChildren[key], parent);
-          if (dirty === false && newItem.dirty) {
-            dirty = true;
+          const newItem = updateChildren(tree.children[key], rawChildren[key], parent);
+          if (updated === false && newItem.state !== 'stable') {
+            updated = true;
           }
-          prevTree.children[key] = newItem;
+          tree.children[key] = newItem;
         });
-        prevTree.dirty = dirty;
-        if (dirty) {
+        tree.state = updated ? 'updated' : 'stable';
+        if (updated) {
           // Update value
-          prevTree.value = mapObject(prevTree.children, v => v.value);
+          tree.value = mapObject(tree.children, v => v.value);
         }
-        return prevTree;
+        return tree;
       }
       // keys have changed => build new tree
       const children = mapObject(rawChildren, (val, key) => {
-        const prevItem = prevTree.children[key];
+        const prevItem = tree.children[key];
         return prevItem
           ? updateChildren(prevItem, val, parent)
           : mountChildren(rawChildren[key], parent);
       });
       const value = mapObject(children, v => v.value);
       const nextTree: TreeElementObject = {
+        id: nextId(),
         type: 'OBJECT',
         children,
         value,
-        previous: prevTree,
-        dirty: true,
+        previous: tree,
+        state: 'created',
       };
       return nextTree;
     }
     // not a the same structure
     const nextTree = mountChildren(rawChildren, parent);
-    nextTree.previous = prevTree;
+    nextTree.previous = tree;
+    nextTree.previous.state = 'removed';
     return nextTree;
   }
-  if (prevTree.type === 'ARRAY') {
+  if (tree.type === 'ARRAY') {
     if (Array.isArray(rawChildren)) {
-      const sameStructure = sameArrayStructure(prevTree.children, rawChildren);
+      const sameStructure = sameArrayStructure(tree.children, rawChildren);
       if (sameStructure) {
-        let dirty = false;
-        prevTree.children = rawChildren.map((child, index) => {
-          const newItem = updateChildren(prevTree.children[index], child, parent);
-          if (dirty === false && newItem.dirty) {
-            dirty = true;
+        let updated = false;
+        tree.children = rawChildren.map((child, index) => {
+          const newItem = updateChildren(tree.children[index], child, parent);
+          if (updated === false && newItem.state !== 'stable') {
+            updated = true;
           }
           return newItem;
         });
-        prevTree.dirty = dirty;
-        if (dirty) {
+        tree.state = updated ? 'updated' : 'stable';
+        if (updated) {
           // Update value
-          prevTree.value = prevTree.children.map(v => v.value);
+          tree.value = tree.children.map(v => v.value);
         }
-        return prevTree;
+        return tree;
       }
-      const prevKeys = prevTree.children.map(item =>
+      // array has changed
+      const prevKeys = tree.children.map(item =>
         item.type === 'CHILD' ? item.element.key : undefined
       );
       const children = rawChildren.map((item, index) => {
         const key = isValidElement(item) ? item.key : undefined;
         const prevIndex =
           key === undefined ? index : prevKeys.indexOf(key) >= 0 ? prevKeys.indexOf(key) : index;
-        const prev = prevTree.children[prevIndex];
+        const prev = tree.children[prevIndex];
         if (!prev) {
           return mountChildren(item, parent);
         }
         return updateChildren(prev, item, parent);
       });
       const value = children.map(v => v.value);
-      // rebuild array
+      tree.children.forEach(prev => {
+        if (children.indexOf(prev) < 0) {
+          prev.state = 'removed';
+        }
+      });
+      tree.state = 'updated';
+
       const nextTree: TreeElementArray = {
+        id: nextId(),
         type: 'ARRAY',
         children,
         value,
-        previous: prevTree,
-        dirty: true,
+        previous: tree,
+        state: 'created',
       };
       return nextTree;
     }
     // not an array anymore
     const nextTree = mountChildren(rawChildren, parent);
-    nextTree.previous = prevTree;
+    nextTree.previous = tree;
+    nextTree.previous.state = 'removed';
     return nextTree;
   }
   throw new Error(`Unsuported update !`);
@@ -274,6 +268,99 @@ function sameArrayStructure(prev: Array<TreeElement>, children: Array<any>): boo
   const childrenKeys = prev.map(item => (isValidElement(item) ? item.key : undefined));
   return arrayShallowEqual(prevKeys, childrenKeys);
 }
+
+function effects(
+  tree: TreeElement,
+  type: 'EFFECT' | 'LAYOUT_EFFECT',
+  onItem: (instance: Instance) => void
+) {
+  const state = tree.state;
+  if (state === 'stable' || state === 'removed') {
+    return;
+  }
+  if (type === 'EFFECT') {
+    // once effect is done, the tree is stable
+    tree.state = 'stable';
+  }
+  if (tree.type === 'ARRAY') {
+    tree.children.forEach(child => {
+      effects(child, type, onItem);
+    });
+    return;
+  }
+  if (tree.type === 'CHILD') {
+    onItem(tree.instance);
+    return;
+  }
+  throw new Error(`Unhandled ${tree.type}`);
+}
+
+function cleanup(
+  tree: TreeElement,
+  type: 'EFFECT' | 'LAYOUT_EFFECT',
+  onItem: (instance: Instance, force: boolean) => void
+) {
+  cleanupInternal(tree, type, onItem, null);
+}
+
+function cleanupInternal(
+  tree: TreeElement,
+  type: 'EFFECT' | 'LAYOUT_EFFECT',
+  onItem: (instance: Instance, force: boolean) => void,
+  parentState: 'removed' | null
+) {
+  const state: TreeElementState = parentState || tree.state;
+  if (state === 'stable') {
+    return;
+  }
+  if (tree.type === 'ARRAY') {
+    if (state === 'removed') {
+      tree.children.forEach(child => {
+        cleanupInternal(child, type, onItem, 'removed');
+      });
+      return;
+    }
+    if (state === 'created' || state === 'updated') {
+      if (tree.previous) {
+        cleanupInternal(tree.previous, type, onItem, null);
+        if (type === 'EFFECT') {
+          tree.previous = null;
+        }
+        return;
+      }
+      tree.children.forEach(child => {
+        cleanupInternal(child, type, onItem, null);
+      });
+      return;
+    }
+    return;
+  }
+  if (tree.type === 'CHILD') {
+    if (state === 'created') {
+      // when a child is 'created' we don't need to cleanup
+      return;
+    }
+    if (state === 'removed') {
+      onItem(tree.instance, true);
+      return;
+    }
+    if (state === 'updated') {
+      onItem(tree.instance, false);
+      return;
+    }
+    return;
+  }
+  throw new Error(`Unhandled ${tree.type}`);
+}
+
+// function unmountTree(tree: TreeElement, type: 'EFFECT' | 'LAYOUT_EFFECT') {
+//   if (tree.type === 'NULL') {
+//     return;
+//   }
+//   if (tree.type === 'CHILD') {
+//     runCleanupOfInstance(subItem.instance, instance, type, true);
+//   }
+// }
 
 // function traverse(
 //   tree: TreeElement,

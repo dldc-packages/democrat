@@ -54,19 +54,11 @@ function runCleanupOfInstance(
           if (hook.type === type && hook.cleanup && (hook.dirty || force)) {
             hook.cleanup();
           }
-          // if (hook.type === 'CHILDREN') {
-          //   ChildrenUtils.traverse(hook.children, item => {
-          //     if (item.previous) {
-          //       // cleanup sub tree
-          //       ChildrenUtils.traverse(item.previous, subItem => {
-          //         runCleanupOfInstance(subItem.instance, instance, type, true);
-          //       });
-          //     } else {
-          //       // cleanup instance
-          //       runCleanupOfInstance(item.instance, instance, type, false);
-          //     }
-          //   });
-          // }
+          if (hook.type === 'CHILDREN') {
+            ChildrenUtils.cleanup(hook.children, type, (subInstance, force) => {
+              runCleanupOfInstance(subInstance, instance, type, force);
+            });
+          }
         });
       }
     },
@@ -84,14 +76,16 @@ function runEffectsOfInstance(
     () => {
       if (instance.hooks) {
         instance.hooks.forEach(hook => {
-          // if (hook.type === 'CHILDREN') {
-          //   ChildrenUtils.traverse(hook.children, subItem => {
-          //     runEffectsOfInstance(subItem.instance, instance, type);
-          //   });
-          // }
           if (hook.type === type && hook.dirty) {
             hook.dirty = false;
             hook.cleanup = hook.effect() || undefined;
+          }
+          if (hook.type === 'CHILDREN') {
+            if (hook.type === 'CHILDREN') {
+              ChildrenUtils.effects(hook.children, type, subInstance => {
+                runEffectsOfInstance(subInstance, instance, type);
+              });
+            }
           }
         });
       }
@@ -101,11 +95,11 @@ function runEffectsOfInstance(
 }
 
 function executeEffect(instance: Instance) {
-  // executeEffectInternal(instance, 'EFFECT');
+  executeEffectInternal(instance, 'EFFECT');
 }
 
 function executeLayoutEffect(instance: Instance) {
-  // executeEffectInternal(instance, 'LAYOUT_EFFECT');
+  executeEffectInternal(instance, 'LAYOUT_EFFECT');
 }
 
 function executeEffectInternal(instance: Instance, type: 'EFFECT' | 'LAYOUT_EFFECT') {

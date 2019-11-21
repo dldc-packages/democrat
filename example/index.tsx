@@ -1,18 +1,22 @@
-import Democrat from '../src';
 import React from '../src';
 
-(window as any).Democrat = Democrat;
+(window as any).Democrat = React;
 
 const Counter = ({ parentCount }: { parentCount: number }) => {
-  const [count, setCounter] = Democrat.useState(0);
+  const [count, setCounter] = React.useState(0);
 
-  const increment = Democrat.useCallback(() => {
+  console.log('Counter');
+
+  const increment = React.useCallback(() => {
     setCounter(prev => prev + 1);
   }, []);
 
-  Democrat.useLayoutEffect(() => {
-    increment();
-  }, []);
+  React.useLayoutEffect(() => {
+    // increment();
+    return () => {
+      console.log('cleanup from Counter layout effect');
+    };
+  });
 
   const total = count + parentCount;
 
@@ -26,27 +30,32 @@ const Counter = ({ parentCount }: { parentCount: number }) => {
 };
 
 const AppStore = () => {
-  const [count, setCounter] = Democrat.useState(2);
+  const [count, setCounter] = React.useState(3);
 
-  const increment = Democrat.useCallback(() => {
+  const increment = React.useCallback(() => {
     setCounter(prev => prev + 1);
   }, []);
 
-  const counters = Democrat.useChildren(
-    new Array(count).fill(null).map(() => Democrat.createElement(Counter, { parentCount: 0 }))
+  const decrement = React.useCallback(() => {
+    setCounter(prev => prev - 1);
+  }, []);
+
+  const counters = React.useChildren(
+    new Array(count).fill(null).map(() => React.createElement(Counter, { parentCount: 0 }))
   );
 
-  return Democrat.useMemo(
+  return React.useMemo(
     () => ({
       count,
       increment,
+      decrement,
       counters,
     }),
-    [count, increment, counters]
+    [count, increment, decrement, counters]
   );
 };
 
-const store = Democrat.render(AppStore, {});
+const store = React.render(AppStore, {});
 (window as any).store = store;
 
 let prevState: any = null;

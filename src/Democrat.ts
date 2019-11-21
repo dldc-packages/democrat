@@ -44,6 +44,8 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
     parent: null,
   });
 
+  (window as any).rootInstance = rootInstance;
+
   function onIdle(exec: OnIdleExec) {
     if (getInternalState().rendering !== null) {
       throw new Error(`Cannot setState during render !`);
@@ -252,8 +254,6 @@ function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T {
 function useCallback<T extends (...args: any[]) => unknown>(callback: T, deps: DependencyList): T {
   return Democrat.useMemo(() => callback, deps);
 }
-
-// function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {}
 
 // useRef<T extends unknown>(initialValue: T): MutableRefObject<T>;
 // useRef<T = undefined>(): MutableRefObject<T | undefined>;
