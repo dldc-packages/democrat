@@ -2,7 +2,7 @@ import React from '../src';
 
 (window as any).Democrat = React;
 
-const Counter = ({ parentCount }: { parentCount: number }) => {
+const Counter = ({ index }: { index: number }) => {
   const [count, setCounter] = React.useState(0);
 
   console.log('Counter');
@@ -11,21 +11,19 @@ const Counter = ({ parentCount }: { parentCount: number }) => {
     setCounter(prev => prev + 1);
   }, []);
 
-  React.useLayoutEffect(() => {
-    // increment();
+  React.useEffect(() => {
+    console.log('effect', index, count);
     return () => {
-      console.log('cleanup from Counter layout effect');
+      console.log('cleanup', index, count);
     };
   });
-
-  const total = count + parentCount;
 
   return React.useMemo(
     () => ({
       increment,
-      count: total,
+      count,
     }),
-    [increment, total]
+    [increment, count]
   );
 };
 
@@ -41,7 +39,7 @@ const AppStore = () => {
   }, []);
 
   const counters = React.useChildren(
-    new Array(count).fill(null).map(() => React.createElement(Counter, { parentCount: 0 }))
+    new Array(count).fill(null).map((_, index) => React.createElement(Counter, { index }))
   );
 
   return React.useMemo(

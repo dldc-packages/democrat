@@ -1,6 +1,13 @@
 import { Subscription } from 'suub';
 import { DEMOCRAT_INTERNAL_STATE } from './symbols';
-import { createInstance, createElement, depsChanged, markDirty } from './utils';
+import {
+  createInstance,
+  createElement,
+  depsChanged,
+  markDirty,
+  globalSetTimeout,
+  globalClearTimeout,
+} from './utils';
 import { ChildrenUtils } from './ChildrenUtils';
 import { getInternalState } from './Global';
 import { ComponentUtils } from './ComponentUtils';
@@ -44,8 +51,6 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
     parent: null,
   });
 
-  (window as any).rootInstance = rootInstance;
-
   function onIdle(exec: OnIdleExec) {
     if (getInternalState().rendering !== null) {
       throw new Error(`Cannot setState during render !`);
@@ -76,7 +81,7 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
   }
 
   function scheduleEffects(effectsSync: boolean): number {
-    return window.setTimeout(() => {
+    return globalSetTimeout(() => {
       ComponentUtils.executeEffect(rootInstance);
       const shouldRender = flushExecQueue();
       if (shouldRender) {
@@ -101,7 +106,7 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
     const shouldRunEffectsSync = flushExecQueue();
     if (shouldRunEffectsSync || effectsSync) {
       if (effectTimer) {
-        window.clearTimeout(effectTimer);
+        globalClearTimeout(effectTimer);
       }
       ComponentUtils.executeEffect(rootInstance);
       const effectRequestRender = flushExecQueue();

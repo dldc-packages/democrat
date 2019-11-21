@@ -122,3 +122,6 @@ export function mapObject<T extends { [key: string]: any }, U>(
     return acc;
   }, {} as { [K in keyof T]: U });
 }
+
+export const globalSetTimeout: typeof window.setTimeout = setTimeout as any;
+export const globalClearTimeout: typeof window.clearTimeout = clearTimeout as any;
