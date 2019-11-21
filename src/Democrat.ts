@@ -153,7 +153,7 @@ function useChildren<C extends Children>(children: C): ResolveType<C> {
   const hook = getCurrentHook();
   const parent = getCurrentInstance();
   if (hook === null) {
-    const childrenTree = ChildrenUtils.mount(children, parent);
+    const childrenTree = ChildrenUtils.mount(children, parent, ComponentUtils.render);
     setCurrentHook({
       type: 'CHILDREN',
       children: childrenTree,
@@ -163,7 +163,7 @@ function useChildren<C extends Children>(children: C): ResolveType<C> {
   if (hook.type !== 'CHILDREN') {
     throw new Error('Invalid Hook type');
   }
-  hook.children = ChildrenUtils.update(hook.children, children, parent);
+  hook.children = ChildrenUtils.update(hook.children, children, parent, ComponentUtils.render);
   setCurrentHook(hook);
   return hook.children.value;
 }

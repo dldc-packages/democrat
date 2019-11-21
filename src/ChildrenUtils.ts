@@ -1,4 +1,4 @@
-import { Instance, DemocratElement } from './types';
+import { Instance, DemocratElement, Component } from './types';
 import {
   isValidElement,
   createInstance,
@@ -8,7 +8,13 @@ import {
   arrayShallowEqual,
 } from './utils';
 import isPlainObject from 'is-plain-object';
-import { ComponentUtils } from './ComponentUtils';
+
+type RenderComponent = <P, T>(
+  component: Component<P, T>,
+  props: P,
+  instance: Instance,
+  parent: Instance | null
+) => T;
 
 type TreeElementState = 'created' | 'stable' | 'updated' | 'removed';
 
@@ -45,7 +51,7 @@ const nextId = (() => {
   return () => id++;
 })();
 
-function mountChildren(rawChildren: any, parent: Instance): TreeElement {
+function mountChildren(rawChildren: any, parent: Instance, render: RenderComponent): TreeElement {
   if (rawChildren === null) {
     const item: TreeElementNull = {
       id: nextId(),
@@ -62,7 +68,7 @@ function mountChildren(rawChildren: any, parent: Instance): TreeElement {
       key: rawChildren.key,
       parent,
     });
-    const value = ComponentUtils.render(rawChildren.component, rawChildren.props, instance, parent);
+    const value = render(rawChildren.component, rawChildren.props, instance, parent);
     const item: TreeElementChild = {
       id: nextId(),
       type: 'CHILD',
@@ -75,7 +81,7 @@ function mountChildren(rawChildren: any, parent: Instance): TreeElement {
     return item;
   }
   if (Array.isArray(rawChildren)) {
-    const children = rawChildren.map(item => mountChildren(item, parent));
+    const children = rawChildren.map(item => mountChildren(item, parent, render));
     const item: TreeElementArray = {
       id: nextId(),
       type: 'ARRAY',
@@ -88,7 +94,7 @@ function mountChildren(rawChildren: any, parent: Instance): TreeElement {
   }
   if (isPlainObject(rawChildren)) {
     const children = mapObject(rawChildren, item => {
-      return mountChildren(item, parent);
+      return mountChildren(item, parent, render);
     });
     const value = mapObject(children, v => v.value);
     const item: TreeElementObject = {
@@ -111,12 +117,17 @@ function mountChildren(rawChildren: any, parent: Instance): TreeElement {
  *      or a new reference if the struture has changed
  *   2. tree.updated if effects should run
  */
-function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): TreeElement {
+function updateChildren(
+  tree: TreeElement,
+  rawChildren: any,
+  parent: Instance,
+  render: RenderComponent
+): TreeElement {
   if (tree.type === 'NULL') {
     if (rawChildren === null) {
       return tree;
     }
-    const nextTree = mountChildren(rawChildren, parent);
+    const nextTree = mountChildren(rawChildren, parent, render);
     return nextTree;
   }
   if (tree.type === 'CHILD') {
@@ -131,12 +142,7 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
         return tree;
       }
       // Re-render
-      const value = ComponentUtils.render(
-        rawChildren.component,
-        rawChildren.props,
-        tree.instance,
-        parent
-      );
+      const value = render(rawChildren.component, rawChildren.props, tree.instance, parent);
       // update the tree
       tree.element = rawChildren;
       tree.value = value;
@@ -145,7 +151,7 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
     }
     // not the same type or not the same component
     // note: we don't need to set nextTree.updated because it's set by mountChildren;
-    const nextTree = mountChildren(rawChildren, parent);
+    const nextTree = mountChildren(rawChildren, parent, render);
     nextTree.previous = tree;
     nextTree.previous.state = 'removed';
     return nextTree;
@@ -157,7 +163,7 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
         // the object has the same structure => update tree object
         let updated = false;
         Object.keys(rawChildren).forEach(key => {
-          const newItem = updateChildren(tree.children[key], rawChildren[key], parent);
+          const newItem = updateChildren(tree.children[key], rawChildren[key], parent, render);
           if (updated === false && newItem.state !== 'stable') {
             updated = true;
           }
@@ -174,8 +180,8 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
       const children = mapObject(rawChildren, (val, key) => {
         const prevItem = tree.children[key];
         return prevItem
-          ? updateChildren(prevItem, val, parent)
-          : mountChildren(rawChildren[key], parent);
+          ? updateChildren(prevItem, val, parent, render)
+          : mountChildren(rawChildren[key], parent, render);
       });
       const value = mapObject(children, v => v.value);
       const nextTree: TreeElementObject = {
@@ -189,7 +195,7 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
       return nextTree;
     }
     // not a the same structure
-    const nextTree = mountChildren(rawChildren, parent);
+    const nextTree = mountChildren(rawChildren, parent, render);
     nextTree.previous = tree;
     nextTree.previous.state = 'removed';
     return nextTree;
@@ -200,7 +206,7 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
       if (sameStructure) {
         let updated = false;
         tree.children = rawChildren.map((child, index) => {
-          const newItem = updateChildren(tree.children[index], child, parent);
+          const newItem = updateChildren(tree.children[index], child, parent, render);
           if (updated === false && newItem.state !== 'stable') {
             updated = true;
           }
@@ -223,9 +229,9 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
           key === undefined ? index : prevKeys.indexOf(key) >= 0 ? prevKeys.indexOf(key) : index;
         const prev = tree.children[prevIndex];
         if (!prev) {
-          return mountChildren(item, parent);
+          return mountChildren(item, parent, render);
         }
-        return updateChildren(prev, item, parent);
+        return updateChildren(prev, item, parent, render);
       });
       const value = children.map(v => v.value);
       tree.children.forEach(prev => {
@@ -246,7 +252,7 @@ function updateChildren(tree: TreeElement, rawChildren: any, parent: Instance): 
       return nextTree;
     }
     // not an array anymore
-    const nextTree = mountChildren(rawChildren, parent);
+    const nextTree = mountChildren(rawChildren, parent, render);
     nextTree.previous = tree;
     nextTree.previous.state = 'removed';
     return nextTree;
