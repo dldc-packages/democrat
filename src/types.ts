@@ -103,3 +103,5 @@ export type InternalState = {
 export type Props<P> = P & { key?: string | number };
 
 export type Component<P, S> = (props: Props<P>) => S;
+
+export type AllOptional<P = {}> = {} extends P ? true : P extends Required<P> ? false : true;

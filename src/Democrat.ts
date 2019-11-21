@@ -13,7 +13,6 @@ import {
   isValidElement,
 } from './utils';
 import {
-  Component,
   Instance,
   Store,
   OnIdleExec,
@@ -28,6 +27,7 @@ import {
   EffectHookData,
   LayoutEffectHookData,
   MemoHookData,
+  DemocratElement,
 } from './types';
 
 export const Democrat = {
@@ -43,7 +43,7 @@ export const Democrat = {
   render,
 };
 
-function render<P, T>(component: Component<P, T>, props: P): Store<T> {
+function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
   const sub = Subscription.create();
   let state: T;
   let execQueue: null | Array<OnIdleExec> = null;
@@ -99,9 +99,9 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
     let effectTimer: number | null = null;
     if (scheduleEffectsBeforeRender) {
       effectTimer = scheduleEffects(effectsSync);
-      state = ComponentUtils.render(component, props, rootInstance, null);
+      state = ComponentUtils.render(rootElement, rootInstance, null);
     } else {
-      state = ComponentUtils.render(component, props, rootInstance, null);
+      state = ComponentUtils.render(rootElement, rootInstance, null);
       effectTimer = scheduleEffects(effectsSync);
     }
     ComponentUtils.executeLayoutEffect(rootInstance);

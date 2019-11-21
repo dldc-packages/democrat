@@ -1,4 +1,4 @@
-import { Component, Instance } from './types';
+import { Instance, DemocratElement } from './types';
 import { getInternalState } from './Global';
 import { ChildrenUtils } from './ChildrenUtils';
 
@@ -9,8 +9,7 @@ export const ComponentUtils = {
 };
 
 function renderComponent<P, T>(
-  component: Component<P, T>,
-  props: P,
+  element: DemocratElement<P, T>,
   instance: Instance,
   parent: Instance | null
 ): T {
@@ -18,7 +17,7 @@ function renderComponent<P, T>(
     instance,
     () => {
       beforeRender(instance);
-      const result = component(props);
+      const result = element.component(element.props);
       afterRender(instance);
       return result;
     },

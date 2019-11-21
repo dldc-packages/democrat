@@ -1,5 +1,14 @@
 import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE } from './symbols';
-import { DemocratElement, Instance, OnIdle, Key, Component, DependencyList, Props } from './types';
+import {
+  DemocratElement,
+  Instance,
+  OnIdle,
+  Key,
+  Component,
+  DependencyList,
+  Props,
+  AllOptional,
+} from './types';
 
 export function isValidElement(maybe: any): maybe is DemocratElement<any, any> {
   return maybe && maybe[DEMOCRAT_ELEMENT] === true;
@@ -34,16 +43,17 @@ export const createInstance = (() => {
 
 export function createElement<P, T>(
   component: Component<P, T>,
-  props: Props<P>
-): DemocratElement<P, T> {
+  props: Props<P> = {} as any
+): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' } {
   const key = props.key;
   delete props.key;
-  return {
+  const element: DemocratElement<P, T> = {
     [DEMOCRAT_ELEMENT]: true,
     component: component,
     props: props,
     key,
   };
+  return element as any;
 }
 
 export function objectShallowEqual(

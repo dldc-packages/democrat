@@ -84,4 +84,4 @@ Promise.resolve().then(() => {
   log('render: promise');
 });
 
-Democrat.render(AppStore, {});
+Democrat.render(Democrat.createElement(AppStore));

@@ -1,7 +1,7 @@
 // by importing as React we get eslint hook plugin working for free !
 import React from '../../src';
 
-const Counter = ({ index }: { index: number }) => {
+const Counter = () => {
   const [count, setCounter] = React.useState(0);
 
   const increment = React.useCallback(() => {
@@ -36,7 +36,7 @@ const AppStore = () => {
   }, []);
 
   const counters = React.useChildren(
-    new Array(count).fill(null).map((_, index) => React.createElement(Counter, { index }))
+    new Array(count).fill(null).map((_, index) => React.createElement(Counter))
   );
 
   return React.useMemo(
@@ -50,7 +50,7 @@ const AppStore = () => {
   );
 };
 
-const store = React.render(AppStore, {});
+const store = React.render(React.createElement(AppStore));
 
 const render = () => {
   const state = store.getState();

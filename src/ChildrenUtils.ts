@@ -1,4 +1,4 @@
-import { Instance, DemocratElement, Component } from './types';
+import { Instance, DemocratElement } from './types';
 import {
   isValidElement,
   createInstance,
@@ -10,8 +10,7 @@ import {
 import isPlainObject from 'is-plain-object';
 
 type RenderComponent = <P, T>(
-  component: Component<P, T>,
-  props: P,
+  element: DemocratElement<P, T>,
   instance: Instance,
   parent: Instance | null
 ) => T;
@@ -68,7 +67,7 @@ function mountChildren(rawChildren: any, parent: Instance, render: RenderCompone
       key: rawChildren.key,
       parent,
     });
-    const value = render(rawChildren.component, rawChildren.props, instance, parent);
+    const value = render(rawChildren, instance, parent);
     const item: TreeElementChild = {
       id: nextId(),
       type: 'CHILD',
@@ -142,7 +141,7 @@ function updateChildren(
         return tree;
       }
       // Re-render
-      const value = render(rawChildren.component, rawChildren.props, tree.instance, parent);
+      const value = render(rawChildren, tree.instance, parent);
       // update the tree
       tree.element = rawChildren;
       tree.value = value;
