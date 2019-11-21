@@ -1,4 +1,4 @@
-import { Democrat } from './Democrat';
+export { Democrat as default } from './Democrat';
 
 export {
   Component,
@@ -7,6 +7,4 @@ export {
   EffectCallback,
   SetStateAction,
   Store,
-} from './Democrat';
-
-export default Democrat;
+} from './types';

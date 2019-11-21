@@ -1,97 +1,29 @@
-import { SubscribeMethod, Subscription } from 'suub';
-
-export type Dispatch<A> = (value: A) => void;
-export type SetStateAction<S> = S | ((prevState: S) => S);
-export type DependencyList = ReadonlyArray<any>;
-export type EffectCleanup = () => void | undefined;
-export type EffectCallback = () => void | EffectCleanup;
-// interface MutableRefObject<T> {
-//   current: T;
-// }
-
-export interface Store<S> {
-  getState: () => S;
-  subscribe: SubscribeMethod<void>;
-}
-
-let nextInstanceId = 0;
-
-const DEMOCRAT_INTERNAL_STATE = Symbol('DEMOCRAT_INTERNAL_STATE');
-const DEMOCRAT_ELEMENT = Symbol('DEMOCRAT_ELEMENT');
-
-interface Element<P, T> {
-  [DEMOCRAT_ELEMENT]: true;
-  component: Component<P, T>;
-  props: P;
-}
-
-interface StateHookData {
-  type: 'STATE';
-  value: any;
-  setValue: Dispatch<SetStateAction<any>>;
-}
-
-interface ChildrenHookData {
-  type: 'CHILDREN';
-  component: Component<any, any>;
-  instance: Instance;
-  props: any;
-}
-
-type EffectHookData = {
-  type: 'EFFECT';
-  effect: EffectCallback;
-  cleanup: undefined | EffectCleanup;
-  deps: DependencyList | undefined;
-  dirty: boolean;
-};
-
-type LayoutEffectHookData = {
-  type: 'LAYOUT_EFFECT';
-  effect: EffectCallback;
-  cleanup: undefined | EffectCleanup;
-  deps: DependencyList | undefined;
-  dirty: boolean;
-};
-
-type MemoHookData = {
-  type: 'MEMO';
-  value: any;
-  deps: DependencyList | undefined;
-};
-
-type HooksData =
-  | StateHookData
-  | ChildrenHookData
-  | EffectHookData
-  | MemoHookData
-  | LayoutEffectHookData;
-
-type OnIdleExec = (render: () => void) => void;
-type OnIdle = (exec: OnIdleExec) => void;
-
-interface Instance {
-  id: number;
-  parent: null | Instance;
-  hooks: Array<HooksData> | null;
-  nextHooks: Array<HooksData>;
-  onIdle: OnIdle;
-}
-
-type InternalState = {
-  rendering: null | Instance;
-  effects: null | Instance;
-};
-
-export type Component<P, S> = (props: P) => S;
-
-const internalState: InternalState = {
-  rendering: null,
-  effects: null,
-};
+import { Subscription } from 'suub';
+import { DEMOCRAT_INTERNAL_STATE } from './symbols';
+import { createInstance, createElement, depsChanged, markDirty } from './utils';
+import { ChildrenUtils } from './ChildrenUtils';
+import { getInternalState } from './Global';
+import { ComponentUtils } from './ComponentUtils';
+import {
+  Component,
+  Instance,
+  Store,
+  OnIdleExec,
+  HooksData,
+  Children,
+  ResolveType,
+  Dispatch,
+  SetStateAction,
+  StateHookData,
+  EffectCallback,
+  DependencyList,
+  EffectHookData,
+  LayoutEffectHookData,
+  MemoHookData,
+} from './types';
 
 export const Democrat = {
-  [DEMOCRAT_INTERNAL_STATE]: internalState,
+  [DEMOCRAT_INTERNAL_STATE]: getInternalState(),
   createElement,
   useChildren,
   useState,
@@ -102,29 +34,31 @@ export const Democrat = {
   render,
 };
 
-function createElement<P, T>(
-  component: Component<P, T>,
-  props: P
-): Element<P, T> {
-  return {
-    [DEMOCRAT_ELEMENT]: true,
-    component: component,
-    props,
-  };
-}
-
 function render<P, T>(component: Component<P, T>, props: P): Store<T> {
   const sub = Subscription.create();
   let state: T;
   let execQueue: null | Array<OnIdleExec> = null;
 
-  const rootInstance: Instance = {
-    id: nextInstanceId++,
-    parent: null,
-    hooks: null,
-    nextHooks: [],
+  const rootInstance = createInstance({
     onIdle,
-  };
+    parent: null,
+  });
+
+  function onIdle(exec: OnIdleExec) {
+    if (getInternalState().rendering !== null) {
+      throw new Error(`Cannot setState during render !`);
+    }
+    if (getInternalState().effects === null) {
+      // exec and pass execute as the render fn
+      exec(() => execute());
+      return;
+    }
+    if (execQueue === null) {
+      execQueue = [exec];
+    } else {
+      execQueue.push(exec);
+    }
+  }
 
   function flushExecQueue(): boolean {
     let renderRequested = false;
@@ -139,29 +73,9 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
     return renderRequested;
   }
 
-  function onIdle(exec: OnIdleExec) {
-    if (Democrat[DEMOCRAT_INTERNAL_STATE].rendering !== null) {
-      throw new Error(`Cannot setState during render !`);
-    }
-    if (Democrat[DEMOCRAT_INTERNAL_STATE].effects === null) {
-      exec(() => {
-        execute();
-      });
-      return;
-    }
-    if (execQueue === null) {
-      execQueue = [exec];
-      // Promise.resolve().then(() => {
-      //   flushExecQueue();
-      // });
-      return;
-    }
-    execQueue.push(exec);
-  }
-
   function scheduleEffects(effectsSync: boolean): number {
     return window.setTimeout(() => {
-      executeEffect(rootInstance, 'EFFECT');
+      ComponentUtils.executeEffect(rootInstance);
       const shouldRender = flushExecQueue();
       if (shouldRender) {
         execute(effectsSync);
@@ -176,29 +90,27 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
     let effectTimer: number | null = null;
     if (scheduleEffectsBeforeRender) {
       effectTimer = scheduleEffects(effectsSync);
-      state = renderComponent(component, props, rootInstance, null);
+      state = ComponentUtils.render(component, props, rootInstance, null);
     } else {
-      state = renderComponent(component, props, rootInstance, null);
+      state = ComponentUtils.render(component, props, rootInstance, null);
       effectTimer = scheduleEffects(effectsSync);
     }
-    executeEffect(rootInstance, 'LAYOUT_EFFECT');
+    ComponentUtils.executeLayoutEffect(rootInstance);
     const shouldRunEffectsSync = flushExecQueue();
     if (shouldRunEffectsSync || effectsSync) {
       if (effectTimer) {
         window.clearTimeout(effectTimer);
       }
-      executeEffect(rootInstance, 'EFFECT');
+      ComponentUtils.executeEffect(rootInstance);
       const effectRequestRender = flushExecQueue();
       if (shouldRunEffectsSync) {
         execute(effectsSync, true);
       } else if (effectsSync && effectRequestRender) {
         execute(true, true);
       }
+    } else {
+      sub.call();
     }
-
-    // if (execQueue === null) {
-    //   sub.call();
-    // }
   }
 
   execute();
@@ -209,89 +121,8 @@ function render<P, T>(component: Component<P, T>, props: P): Store<T> {
   };
 }
 
-function runEffectsOfInstance(
-  instance: Instance,
-  type: 'EFFECT' | 'LAYOUT_EFFECT'
-) {
-  if (instance.hooks) {
-    instance.hooks.forEach(hook => {
-      if (hook.type === 'CHILDREN') {
-        runEffectsOfInstance(hook.instance, type);
-      }
-    });
-    instance.hooks.forEach(hook => {
-      if (hook.type === type) {
-        if (hook.dirty) {
-          hook.dirty = false;
-          if (hook.cleanup) {
-            hook.cleanup();
-          }
-          hook.cleanup = hook.effect() || undefined;
-        }
-      }
-    });
-  }
-}
-
-function executeEffect(instance: Instance, type: 'EFFECT' | 'LAYOUT_EFFECT') {
-  if (Democrat[DEMOCRAT_INTERNAL_STATE].effects !== null) {
-    throw new Error('Already executing effects');
-  }
-  Democrat[DEMOCRAT_INTERNAL_STATE].effects = instance;
-  // loop to run layoutEffects
-  runEffectsOfInstance(instance, type);
-  Democrat[DEMOCRAT_INTERNAL_STATE].effects = null;
-}
-
-function beforeRender(instance: Instance) {
-  instance.nextHooks = [];
-}
-
-function afterRender(instance: Instance) {
-  if (instance.hooks) {
-    // not first render
-    if (instance.hooks.length !== instance.nextHooks.length) {
-      throw new Error('Hooks count mismatch !');
-    }
-  }
-  const hooks = instance.nextHooks;
-  instance.hooks = hooks;
-}
-
-function withRenderingInstanceState<T>(
-  current: Instance,
-  exec: () => T,
-  expectedParent: Instance | null
-): T {
-  if (Democrat[DEMOCRAT_INTERNAL_STATE].rendering !== expectedParent) {
-    throw new Error('Invalid parent !');
-  }
-  Democrat[DEMOCRAT_INTERNAL_STATE].rendering = current;
-  const result = exec();
-  Democrat[DEMOCRAT_INTERNAL_STATE].rendering = expectedParent;
-  return result;
-}
-
-function renderComponent<P, T>(
-  component: Component<P, T>,
-  props: P,
-  instance: Instance,
-  parent: Instance | null
-): T {
-  return withRenderingInstanceState(
-    instance,
-    () => {
-      beforeRender(instance);
-      const result = component(props);
-      afterRender(instance);
-      return result;
-    },
-    parent
-  );
-}
-
 function getCurrentInstance(): Instance {
-  const state = Democrat[DEMOCRAT_INTERNAL_STATE].rendering;
+  const state = getInternalState().rendering;
   if (state === null) {
     throw new Error(`Hooks used outside of render !`);
   }
@@ -311,66 +142,36 @@ function setCurrentHook(hook: HooksData) {
   instance.nextHooks.push(hook);
 }
 
-function useChildren<P, T>(elements: Element<P, T>): T {
+function useChildren<C extends Children>(children: C): ResolveType<C> {
   const hook = getCurrentHook();
   const parent = getCurrentInstance();
   if (hook === null) {
-    const childInstance: Instance = {
-      id: nextInstanceId++,
-      parent,
-      hooks: null,
-      nextHooks: [],
-      onIdle: parent.onIdle,
-    };
-    const result = renderComponent(
-      elements.component,
-      elements.props,
-      childInstance,
-      parent
-    );
+    const childrenTree = ChildrenUtils.mount(children, parent);
     setCurrentHook({
       type: 'CHILDREN',
-      component: elements.component,
-      instance: childInstance,
-      props: elements.props,
+      children: childrenTree,
     });
-    return result;
+    return childrenTree.value;
   }
   if (hook.type !== 'CHILDREN') {
     throw new Error('Invalid Hook type');
   }
-  if (hook.component !== elements.component) {
-    throw new Error('Changing type is not supported yet');
-  }
-  // re-render
-  // TODO: check props to skip render
-  const result = renderComponent(
-    elements.component,
-    elements.props,
-    hook.instance,
-    parent
-  );
-  hook.props = elements.props;
+  hook.children = ChildrenUtils.update(hook.children, children, parent);
   setCurrentHook(hook);
-  return result;
+  return hook.children.value;
 }
 
-function useState<S>(
-  initialState: S | (() => S)
-): [S, Dispatch<SetStateAction<S>>] {
+function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>] {
   const hook = getCurrentHook();
   const instance = getCurrentInstance();
   if (hook === null) {
-    const value =
-      typeof initialState === 'function'
-        ? (initialState as any)()
-        : initialState;
+    const value = typeof initialState === 'function' ? (initialState as any)() : initialState;
     const setValue: Dispatch<SetStateAction<S>> = value => {
       instance.onIdle(render => {
-        const nextValue =
-          typeof value === 'function' ? (value as any)(stateHook.value) : value;
+        const nextValue = typeof value === 'function' ? (value as any)(stateHook.value) : value;
         if (nextValue !== stateHook.value) {
           stateHook.value = nextValue;
+          markDirty(instance);
           render();
         }
       });
@@ -426,26 +227,6 @@ function useEffectInternal(
   return;
 }
 
-function depsChanged(
-  deps1: DependencyList | undefined,
-  deps2: DependencyList | undefined
-): boolean {
-  if (deps1 === undefined || deps2 === undefined) {
-    return true;
-  }
-  if (deps1.length !== deps2.length) {
-    return true;
-  }
-  for (let i = 0; i < deps1.length; i++) {
-    const dep = deps1[i];
-    if (!Object.is(dep, deps2[i])) {
-      // guards changed
-      return true;
-    }
-  }
-  return false;
-}
-
 function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T {
   const hook = getCurrentHook();
   if (hook === null) {
@@ -468,10 +249,7 @@ function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T {
   return hook.value;
 }
 
-function useCallback<T extends (...args: any[]) => unknown>(
-  callback: T,
-  deps: DependencyList
-): T {
+function useCallback<T extends (...args: any[]) => unknown>(callback: T, deps: DependencyList): T {
   return Democrat.useMemo(() => callback, deps);
 }
 
