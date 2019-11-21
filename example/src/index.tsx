@@ -1,20 +1,17 @@
-import React from '../src';
-
-(window as any).Democrat = React;
+// by importing as React we get eslint hook plugin working for free !
+import React from '../../src';
 
 const Counter = ({ index }: { index: number }) => {
   const [count, setCounter] = React.useState(0);
-
-  console.log('Counter');
 
   const increment = React.useCallback(() => {
     setCounter(prev => prev + 1);
   }, []);
 
   React.useEffect(() => {
-    console.log('effect', index, count);
+    console.log('Counter effect');
     return () => {
-      console.log('cleanup', index, count);
+      console.log('Couter cleanup');
     };
   });
 
@@ -54,27 +51,9 @@ const AppStore = () => {
 };
 
 const store = React.render(AppStore, {});
-(window as any).store = store;
-
-let prevState: any = null;
 
 const render = () => {
   const state = store.getState();
-  if (prevState) {
-    // console.log(
-    //   Object.keys(state).reduce((acc, key) => {
-    //     acc[key] = prevState[key] === state[key];
-    //     return acc;
-    //   }, {} as any)
-    // );
-    // console.log(
-    //   Object.keys(state.counters).reduce((acc, key) => {
-    //     acc[key] = prevState.counters[key] === state.counters[key];
-    //     return acc;
-    //   }, {} as any)
-    // );
-  }
-  prevState = state;
   (window as any).state = state;
   console.log(state);
 };
@@ -82,3 +61,17 @@ const render = () => {
 store.subscribe(render);
 
 render();
+
+document.getElementById('root')!.innerText = 'Open the console';
+
+window.setTimeout(() => {
+  console.log(
+    [
+      'try one of the following',
+      '',
+      '- state.increment()',
+      `- state.counters[0].increment()`,
+      '- state.idecrement()',
+    ].join('\n')
+  );
+}, 0);

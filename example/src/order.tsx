@@ -1,6 +1,4 @@
-import Democrat, { Component } from '../src';
-
-(window as any).Democrat = Democrat;
+import Democrat, { Component } from '../../src';
 
 let logCount = 0;
 const log = (...vals) => console.log(logCount++, ...vals);
@@ -87,7 +85,3 @@ Promise.resolve().then(() => {
 });
 
 Democrat.render(AppStore, {});
-
-// store.subscribe(() => {
-//   console.log(store.getState());
-// });
