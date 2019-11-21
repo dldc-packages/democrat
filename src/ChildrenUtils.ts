@@ -287,9 +287,18 @@ function effects(
     // once effect is done, the tree is stable
     tree.state = 'stable';
   }
+  if (tree.type === 'NULL') {
+    return;
+  }
   if (tree.type === 'ARRAY') {
     tree.children.forEach(child => {
       effects(child, type, onItem);
+    });
+    return;
+  }
+  if (tree.type === 'OBJECT') {
+    Object.keys(tree.children).forEach(key => {
+      effects(tree.children[key], type, onItem);
     });
     return;
   }
@@ -297,7 +306,7 @@ function effects(
     onItem(tree.instance);
     return;
   }
-  throw new Error(`Unhandled ${tree.type}`);
+  throw new Error(`Unhandled tree type for effect`);
 }
 
 function cleanup(
@@ -316,6 +325,17 @@ function cleanupInternal(
 ) {
   const state: TreeElementState = parentState || tree.state;
   if (state === 'stable') {
+    return;
+  }
+  if (tree.type === 'NULL') {
+    if (state === 'created' || state === 'updated') {
+      if (tree.previous) {
+        cleanupInternal(tree.previous, type, onItem, null);
+        if (type === 'EFFECT') {
+          tree.previous = null;
+        }
+      }
+    }
     return;
   }
   if (tree.type === 'ARRAY') {
@@ -340,6 +360,28 @@ function cleanupInternal(
     }
     return;
   }
+  if (tree.type === 'OBJECT') {
+    if (state === 'removed') {
+      Object.keys(tree.children).forEach(key => {
+        cleanupInternal(tree.children[key], type, onItem, 'removed');
+      });
+      return;
+    }
+    if (state === 'created' || state === 'updated') {
+      if (tree.previous) {
+        cleanupInternal(tree.previous, type, onItem, null);
+        if (type === 'EFFECT') {
+          tree.previous = null;
+        }
+        return;
+      }
+      Object.keys(tree.children).forEach(key => {
+        cleanupInternal(tree.children[key], type, onItem, null);
+      });
+      return;
+    }
+    return;
+  }
   if (tree.type === 'CHILD') {
     if (state === 'created') {
       // when a child is 'created' we don't need to cleanup
@@ -355,36 +397,5 @@ function cleanupInternal(
     }
     return;
   }
-  throw new Error(`Unhandled ${tree.type}`);
+  throw new Error(`Unhandled tree type for cleanup`);
 }
-
-// function unmountTree(tree: TreeElement, type: 'EFFECT' | 'LAYOUT_EFFECT') {
-//   if (tree.type === 'NULL') {
-//     return;
-//   }
-//   if (tree.type === 'CHILD') {
-//     runCleanupOfInstance(subItem.instance, instance, type, true);
-//   }
-// }
-
-// function traverse(
-//   tree: TreeElement,
-//   onElement: (element: TreeElement, next: () => void) => void
-// ): void {
-//   if (tree.type === 'NULL') {
-//     return;
-//   }
-//   if (tree.type === 'CHILD') {
-//     onElement(tree, ());
-//     return;
-//   }
-//   if (tree.type === 'ARRAY') {
-//     tree.children.forEach(item => traverse(item, onElement));
-//     return;
-//   }
-//   if (tree.type === 'OBJECT') {
-//     Object.keys(tree.children).forEach(key => traverse(tree.children[key], onElement));
-//     return;
-//   }
-//   throw new Error('Invalid tree element');
-// }
