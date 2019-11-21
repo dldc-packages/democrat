@@ -1,22 +1,35 @@
 {
   "name": "democrat",
   "version": "1.0.0-alpha.0",
+  "description": "React, but for state management !",
+  "keywords": [],
+  "homepage": "https://github.com/etienne-dldc/democrat#readme",
+  "bugs": {
+    "url": "https://github.com/etienne-dldc/democrat/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/etienne-dldc/democrat.git"
+  },
   "license": "MIT",
   "author": "Etienne Dldc",
-  "main": "dist/index.js",
-  "module": "dist/democrat.esm.js",
-  "typings": "dist/index.d.ts",
   "files": [
     "dist"
   ],
-  "scripts": {
-    "start": "tsdx watch",
-    "build": "tsdx build --target web",
-    "test": "tsdx test --env=jsdom",
-    "lint": "tsdx lint",
-    "pub": "np"
+  "main": "dist/index.js",
+  "module": "dist/democrat.esm.js",
+  "typings": "dist/index.d.ts",
+  "directories": {
+    "example": "example",
+    "test": "test"
   },
-  "peerDependencies": {},
+  "scripts": {
+    "build": "tsdx build --target web",
+    "lint": "tsdx lint",
+    "pub": "np",
+    "start": "tsdx watch",
+    "test": "tsdx test --env=jsdom"
+  },
   "husky": {
     "hooks": {
       "pre-commit": "tsdx lint"
@@ -28,6 +41,10 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
+  "dependencies": {
+    "is-plain-object": "^3.0.0",
+    "suub": "^1.4.2"
+  },
   "devDependencies": {
     "@types/jest": "^24.0.22",
     "husky": "^3.0.9",
@@ -35,23 +52,5 @@
     "tsdx": "^0.11.0",
     "tslib": "^1.10.0",
     "typescript": "^3.7.2"
-  },
-  "dependencies": {
-    "is-plain-object": "^3.0.0",
-    "suub": "^1.4.2"
-  },
-  "description": "",
-  "directories": {
-    "example": "example",
-    "test": "test"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/etienne-dldc/democrat.git"
-  },
-  "keywords": [],
-  "bugs": {
-    "url": "https://github.com/etienne-dldc/democrat/issues"
-  },
-  "homepage": "https://github.com/etienne-dldc/democrat#readme"
+  }
 }
