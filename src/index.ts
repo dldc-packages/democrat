@@ -7,4 +7,9 @@ export {
   EffectCallback,
   SetStateAction,
   Store,
+  DemocratElement,
+  Key,
+  Props,
+  EffectCleanup,
+  ResolveType,
 } from './types';

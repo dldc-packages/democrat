@@ -1,5 +1,8 @@
 import { Subscription } from 'suub';
 import { DEMOCRAT_INTERNAL_STATE } from './symbols';
+import { ChildrenUtils } from './ChildrenUtils';
+import { getInternalState } from './Global';
+import { ComponentUtils } from './ComponentUtils';
 import {
   createInstance,
   createElement,
@@ -7,10 +10,8 @@ import {
   markDirty,
   globalSetTimeout,
   globalClearTimeout,
+  isValidElement,
 } from './utils';
-import { ChildrenUtils } from './ChildrenUtils';
-import { getInternalState } from './Global';
-import { ComponentUtils } from './ComponentUtils';
 import {
   Component,
   Instance,
@@ -32,6 +33,7 @@ import {
 export const Democrat = {
   [DEMOCRAT_INTERNAL_STATE]: getInternalState(),
   createElement,
+  isValidElement,
   useChildren,
   useState,
   useEffect,
