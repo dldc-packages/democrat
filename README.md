@@ -73,6 +73,27 @@ const Parent = () => {
 };
 ```
 
+## Using hooks library
+
+Because Democrat's hooks works just like React's ones with a little trick you can use any React hook in Democrat.
+All you need to do is add this code before the first `Democrat.render`.
+
+```js
+import React from 'react';
+import Democrat from 'democrat';
+
+Democrat.supportReactHooks(React);
+```
+
+Note that for now only the following hooks are supported:
+
+- `useState`
+- `useEffect`
+- `useMemo`
+- `useCallback`
+- `useLayoutEffect`
+- `useRef`
+
 ## Components
 
 ```ts

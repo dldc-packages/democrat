@@ -111,6 +111,7 @@ export interface Instance {
 export type InternalState = {
   rendering: null | Instance;
   effects: null | Instance;
+  reactHooksSupported: boolean;
 };
 
 export type Props<P> = P & { key?: string | number };

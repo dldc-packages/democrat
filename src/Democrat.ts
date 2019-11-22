@@ -1,5 +1,4 @@
 import { Subscription } from 'suub';
-import { DEMOCRAT_INTERNAL_STATE } from './symbols';
 import { ChildrenUtils } from './ChildrenUtils';
 import { getInternalState } from './Global';
 import { ComponentUtils } from './ComponentUtils';
@@ -34,10 +33,10 @@ import {
 } from './types';
 
 export const Democrat = {
-  [DEMOCRAT_INTERNAL_STATE]: getInternalState(),
   createElement,
   isValidElement,
   render,
+  supportReactHooks,
   // hooks
   useChildren,
   useState,
@@ -47,6 +46,22 @@ export const Democrat = {
   useLayoutEffect,
   useRef,
 };
+
+function supportReactHooks(React: any) {
+  if (getInternalState().reactHooksSupported) {
+    return;
+  }
+  const methods = ['useState', 'useEffect', 'useMemo', 'useCallback', 'useLayoutEffect', 'useRef'];
+  methods.forEach(name => {
+    const originalFn = React[name];
+    React[name] = (...args: Array<any>) => {
+      if (getInternalState().rendering) {
+        return (Democrat as any)[name](...args);
+      }
+      return originalFn(...args);
+    };
+  });
+}
 
 function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
   const sub = Subscription.create();
@@ -296,6 +311,7 @@ function useRef<T>(initialValue?: T): MutableRefObject<T> {
   if (hook.type !== 'REF') {
     throw new Error('Invalid Hook type');
   }
+  setCurrentHook(hook);
   return hook.ref;
 }
 
