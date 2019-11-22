@@ -7,7 +7,12 @@
     "start": "parcel index.html",
     "build": "parcel build index.html"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@types/react": "^16.9.11",
+    "@types/react-dom": "^16.9.4",
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  },
   "alias": {},
   "devDependencies": {
     "parcel": "^1.12.3",

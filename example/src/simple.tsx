@@ -18,12 +18,18 @@ const Store = () => {
   return result;
 };
 
-const store = Democrat.render(Democrat.createElement(Store));
+function runExample() {
+  const store = Democrat.render(Democrat.createElement(Store));
 
-const render = () => {
-  console.log(store.getState());
-};
+  const render = () => {
+    console.log(store.getState());
+  };
 
-store.subscribe(render);
+  store.subscribe(render);
 
-render();
+  render();
+
+  return () => store.destroy();
+}
+
+export default runExample;

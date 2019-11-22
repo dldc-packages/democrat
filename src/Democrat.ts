@@ -30,6 +30,7 @@ import {
   DemocratElement,
   MutableRefObject,
   RefHookData,
+  EffectType,
 } from './types';
 
 export const Democrat = {
@@ -50,6 +51,7 @@ export const Democrat = {
 function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
   const sub = Subscription.create();
   let state: T;
+  let destroyed: boolean = false;
   let execQueue: null | Array<OnIdleExec> = null;
 
   const rootInstance = createInstance({
@@ -57,7 +59,18 @@ function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
     parent: null,
   });
 
+  execute();
+
+  return {
+    getState: () => state,
+    subscribe: sub.subscribe,
+    destroy,
+  };
+
   function onIdle(exec: OnIdleExec) {
+    if (destroyed) {
+      throw new Error('Store destroyed');
+    }
     if (getInternalState().rendering !== null) {
       throw new Error(`Cannot setState during render !`);
     }
@@ -100,6 +113,9 @@ function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
     effectsSync: boolean = false,
     scheduleEffectsBeforeRender: boolean = false
   ): void {
+    if (destroyed) {
+      throw new Error('Store destroyed');
+    }
     let effectTimer: number | null = null;
     if (scheduleEffectsBeforeRender) {
       effectTimer = scheduleEffects(effectsSync);
@@ -126,12 +142,13 @@ function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
     }
   }
 
-  execute();
-
-  return {
-    getState: () => state,
-    subscribe: sub.subscribe,
-  };
+  function destroy() {
+    if (destroyed) {
+      throw new Error('Store already destroyed');
+    }
+    ComponentUtils.unmount(rootInstance);
+    destroyed = true;
+  }
 }
 
 function getCurrentInstance(): Instance {
@@ -208,11 +225,7 @@ function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {
   return useEffectInternal('LAYOUT_EFFECT', effect, deps);
 }
 
-function useEffectInternal(
-  type: 'EFFECT' | 'LAYOUT_EFFECT',
-  effect: EffectCallback,
-  deps?: DependencyList
-): void {
+function useEffectInternal(type: EffectType, effect: EffectCallback, deps?: DependencyList): void {
   const hook = getCurrentHook();
   if (hook === null) {
     const effectHook: EffectHookData | LayoutEffectHookData = {

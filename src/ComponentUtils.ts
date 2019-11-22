@@ -1,4 +1,4 @@
-import { Instance, DemocratElement } from './types';
+import { Instance, DemocratElement, EffectType } from './types';
 import { getInternalState } from './Global';
 import { ChildrenUtils } from './ChildrenUtils';
 
@@ -6,6 +6,7 @@ export const ComponentUtils = {
   render: renderComponent,
   executeEffect,
   executeLayoutEffect,
+  unmount,
 };
 
 function renderComponent<P, T>(
@@ -25,6 +26,23 @@ function renderComponent<P, T>(
   );
 }
 
+function beforeRender(instance: Instance) {
+  instance.nextHooks = [];
+}
+
+function afterRender(instance: Instance) {
+  if (process.env.NODE_ENV === 'development') {
+    if (instance.hooks) {
+      // not first render
+      if (instance.hooks.length !== instance.nextHooks.length) {
+        throw new Error('Hooks count mismatch !');
+      }
+    }
+  }
+  instance.hooks = instance.nextHooks;
+  instance.dirty = false;
+}
+
 function withGlobalRenderingInstance<T>(
   current: Instance,
   exec: () => T,
@@ -39,37 +57,25 @@ function withGlobalRenderingInstance<T>(
   return result;
 }
 
-function runCleanupOfInstance(
-  instance: Instance,
-  parent: Instance | null,
-  type: 'EFFECT' | 'LAYOUT_EFFECT',
-  force: boolean
-) {
-  withGlobaleEffectsInstance(
-    instance,
-    () => {
-      if (instance.hooks) {
-        instance.hooks.forEach(hook => {
-          if (hook.type === type && hook.cleanup && (hook.dirty || force)) {
-            hook.cleanup();
-          }
-          if (hook.type === 'CHILDREN') {
-            ChildrenUtils.cleanup(hook.children, type, (subInstance, force) => {
-              runCleanupOfInstance(subInstance, instance, type, force);
-            });
-          }
-        });
-      }
-    },
-    parent
-  );
+function unmount(instance: Instance) {
+  runCleanupOfInstance(instance, null, 'LAYOUT_EFFECT', true);
+  runCleanupOfInstance(instance, null, 'EFFECT', true);
 }
 
-function runEffectsOfInstance(
-  instance: Instance,
-  parent: Instance | null,
-  type: 'EFFECT' | 'LAYOUT_EFFECT'
-) {
+function executeEffect(instance: Instance) {
+  executeEffectInternal(instance, 'EFFECT');
+}
+
+function executeLayoutEffect(instance: Instance) {
+  executeEffectInternal(instance, 'LAYOUT_EFFECT');
+}
+
+function executeEffectInternal(instance: Instance, type: EffectType) {
+  runCleanupOfInstance(instance, null, type, false);
+  runEffectsOfInstance(instance, null, type);
+}
+
+function runEffectsOfInstance(instance: Instance, parent: Instance | null, type: EffectType) {
   withGlobaleEffectsInstance(
     instance,
     () => {
@@ -93,17 +99,31 @@ function runEffectsOfInstance(
   );
 }
 
-function executeEffect(instance: Instance) {
-  executeEffectInternal(instance, 'EFFECT');
-}
-
-function executeLayoutEffect(instance: Instance) {
-  executeEffectInternal(instance, 'LAYOUT_EFFECT');
-}
-
-function executeEffectInternal(instance: Instance, type: 'EFFECT' | 'LAYOUT_EFFECT') {
-  runCleanupOfInstance(instance, null, type, false);
-  runEffectsOfInstance(instance, null, type);
+function runCleanupOfInstance(
+  instance: Instance,
+  parent: Instance | null,
+  type: EffectType,
+  force: boolean
+) {
+  withGlobaleEffectsInstance(
+    instance,
+    () => {
+      if (instance.hooks) {
+        instance.hooks.forEach(hook => {
+          if (hook.type === 'CHILDREN') {
+            ChildrenUtils.cleanup(hook.children, type, (subInstance, force) => {
+              runCleanupOfInstance(subInstance, instance, type, force);
+            });
+            return;
+          }
+          if (hook.type === type && hook.cleanup && (hook.dirty || force)) {
+            hook.cleanup();
+          }
+        });
+      }
+    },
+    parent
+  );
 }
 
 function withGlobaleEffectsInstance(
@@ -117,20 +137,4 @@ function withGlobaleEffectsInstance(
   getInternalState().effects = current;
   exec();
   getInternalState().effects = expectedParent;
-}
-
-function beforeRender(instance: Instance) {
-  instance.nextHooks = [];
-}
-
-function afterRender(instance: Instance) {
-  if (instance.hooks) {
-    // not first render
-    if (instance.hooks.length !== instance.nextHooks.length) {
-      throw new Error('Hooks count mismatch !');
-    }
-  }
-  const hooks = instance.nextHooks;
-  instance.hooks = hooks;
-  instance.dirty = false;
 }

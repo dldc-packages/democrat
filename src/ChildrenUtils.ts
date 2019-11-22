@@ -1,4 +1,4 @@
-import { Instance, DemocratElement } from './types';
+import { Instance, DemocratElement, EffectType } from './types';
 import {
   isValidElement,
   createInstance,
@@ -6,37 +6,17 @@ import {
   sameObjectKeys,
   mapObject,
   arrayShallowEqual,
+  mapMap,
+  mapSet,
 } from './utils';
 import isPlainObject from 'is-plain-object';
+import { TreeElement, TreeElementState, createTreeElement, TreeElementType } from './TreeElement';
 
 type RenderComponent = <P, T>(
   element: DemocratElement<P, T>,
   instance: Instance,
   parent: Instance | null
 ) => T;
-
-type TreeElementState = 'created' | 'stable' | 'updated' | 'removed';
-
-type TreeElementCommon = {
-  id: number;
-  previous: TreeElement | null;
-  value: any;
-  state: TreeElementState;
-};
-
-type TreeElementObject = TreeElementCommon & {
-  type: 'OBJECT';
-  children: { [key: string]: TreeElement };
-};
-type TreeElementArray = TreeElementCommon & { type: 'ARRAY'; children: Array<TreeElement> };
-type TreeElementChild = TreeElementCommon & {
-  type: 'CHILD';
-  element: DemocratElement<any, any>;
-  instance: Instance;
-};
-type TreeElementNull = TreeElementCommon & { type: 'NULL' };
-
-export type TreeElement = TreeElementNull | TreeElementObject | TreeElementArray | TreeElementChild;
 
 export const ChildrenUtils = {
   mount: mountChildren,
@@ -45,96 +25,133 @@ export const ChildrenUtils = {
   effects,
 };
 
-const nextId = (() => {
-  let id = 0;
-  return () => id++;
-})();
+type CreateTreeElementRaw<T extends { [K in TreeElementType]: any }> = T;
+type TreeElementRaw = CreateTreeElementRaw<{
+  NULL: null;
+  CHILD: DemocratElement<any, any>;
+  ARRAY: Array<any>;
+  OBJECT: { [key: string]: any };
+  MAP: Map<any, any>;
+  SET: Set<any>;
+}>;
 
-function mountChildren(rawChildren: any, parent: Instance, render: RenderComponent): TreeElement {
-  if (rawChildren === null) {
-    const item: TreeElementNull = {
-      id: nextId(),
-      type: 'NULL',
+const CHILDREN_MOUNT: {
+  [K in TreeElementType]: (
+    rawChildren: TreeElementRaw[K],
+    parent: Instance,
+    render: RenderComponent
+  ) => TreeElement<K>;
+} = {
+  NULL: () => {
+    const item = createTreeElement('NULL', {
       value: null,
       previous: null,
-      state: 'created',
-    };
+    });
     return item;
-  }
-  if (isValidElement(rawChildren)) {
+  },
+  CHILD: (rawChildren, parent, render) => {
     const instance = createInstance({
       onIdle: parent.onIdle,
       key: rawChildren.key,
       parent,
     });
     const value = render(rawChildren, instance, parent);
-    const item: TreeElementChild = {
-      id: nextId(),
-      type: 'CHILD',
-      value,
-      previous: null,
+    const item = createTreeElement('CHILD', {
       element: rawChildren,
       instance,
-      state: 'created',
-    };
+      value,
+      previous: null,
+    });
     return item;
-  }
-  if (Array.isArray(rawChildren)) {
+  },
+  ARRAY: (rawChildren, parent, render) => {
     const children = rawChildren.map(item => mountChildren(item, parent, render));
-    const item: TreeElementArray = {
-      id: nextId(),
-      type: 'ARRAY',
+    const item = createTreeElement('ARRAY', {
+      children,
       value: children.map(item => item.value),
       previous: null,
-      children,
-      state: 'created',
-    };
+    });
     return item;
-  }
-  if (isPlainObject(rawChildren)) {
+  },
+  OBJECT: (rawChildren, parent, render) => {
     const children = mapObject(rawChildren, item => {
       return mountChildren(item, parent, render);
     });
     const value = mapObject(children, v => v.value);
-    const item: TreeElementObject = {
-      id: nextId(),
-      type: 'OBJECT',
-      value: value,
+    const item = createTreeElement('OBJECT', {
+      value,
+      children,
       previous: null,
-      children: children,
-      state: 'created',
-    };
+    });
     return item;
-  }
+  },
+  MAP: (rawChildren, parent, render) => {
+    const children = mapMap(rawChildren, v => mountChildren(v, parent, render));
+    const item = createTreeElement('MAP', {
+      value: mapMap(children, item => item.value),
+      children,
+      previous: null,
+    });
+    return item;
+  },
+  SET: (rawChildren, parent, render) => {
+    const children = mapSet(rawChildren, v => mountChildren(v, parent, render));
+    const item = createTreeElement('SET', {
+      value: mapSet(children, item => item.value),
+      children,
+      previous: null,
+    });
+    return item;
+  },
+};
 
-  throw new Error(`Invalid value in children`);
+function getChildrenType(rawChildren: any): TreeElementType {
+  if (rawChildren === null) {
+    return 'NULL';
+  }
+  if (isValidElement(rawChildren)) {
+    return 'CHILD';
+  }
+  if (Array.isArray(rawChildren)) {
+    return 'ARRAY';
+  }
+  if (rawChildren instanceof Map) {
+    return 'MAP';
+  }
+  if (rawChildren instanceof Set) {
+    return 'SET';
+  }
+  if (isPlainObject(rawChildren)) {
+    return 'OBJECT';
+  }
+  throw new Error(`Invalid children type`);
 }
 
-/**
- * Returns
- *   1. The same reference if the structure is the same
- *      or a new reference if the struture has changed
- *   2. tree.updated if effects should run
- */
-function updateChildren(
-  tree: TreeElement,
-  rawChildren: any,
-  parent: Instance,
-  render: RenderComponent
-): TreeElement {
-  if (tree.type === 'NULL') {
+function mountChildren(rawChildren: any, parent: Instance, render: RenderComponent): TreeElement {
+  return CHILDREN_MOUNT[getChildrenType(rawChildren)](rawChildren as never, parent, render);
+}
+
+const CHILDREN_UPDATES: {
+  [K in TreeElementType]: (
+    tree: TreeElement<K>,
+    rawChildren: any,
+    parent: Instance,
+    render: RenderComponent
+  ) => TreeElement;
+} = {
+  NULL: (tree, rawChildren, parent, render) => {
     if (rawChildren === null) {
       return tree;
     }
     const nextTree = mountChildren(rawChildren, parent, render);
     return nextTree;
-  }
-  if (tree.type === 'CHILD') {
-    if (
+  },
+  CHILD: (tree, rawChildren, parent, render) => {
+    const sameComponent =
       isValidElement(rawChildren) &&
       rawChildren.component === tree.element.component &&
-      rawChildren.key === tree.element.key
-    ) {
+      rawChildren.key === tree.element.key;
+    if (sameComponent) {
       // This is an update of a component
       const sameProps = objectShallowEqual(tree.element.props, rawChildren.props);
       if (sameProps && tree.instance.dirty === false) {
@@ -154,8 +171,8 @@ function updateChildren(
     nextTree.previous = tree;
     nextTree.previous.state = 'removed';
     return nextTree;
-  }
-  if (tree.type === 'OBJECT') {
+  },
+  OBJECT: (tree, rawChildren, parent, render) => {
     if (isPlainObject(rawChildren)) {
       const sameKeys = sameObjectKeys(rawChildren, tree.children);
       if (sameKeys) {
@@ -183,14 +200,11 @@ function updateChildren(
           : mountChildren(rawChildren[key], parent, render);
       });
       const value = mapObject(children, v => v.value);
-      const nextTree: TreeElementObject = {
-        id: nextId(),
-        type: 'OBJECT',
+      const nextTree = createTreeElement('OBJECT', {
         children,
         value,
         previous: tree,
-        state: 'created',
-      };
+      });
       return nextTree;
     }
     // not a the same structure
@@ -198,9 +212,12 @@ function updateChildren(
     nextTree.previous = tree;
     nextTree.previous.state = 'removed';
     return nextTree;
-  }
-  if (tree.type === 'ARRAY') {
+  },
+  ARRAY: (tree, rawChildren, parent, render) => {
     if (Array.isArray(rawChildren)) {
+      // if the length is different or if the keys have moved
+      // we need to create a new TreeElement because cleanup order
+      // is not the same as effects order
       const sameStructure = sameArrayStructure(tree.children, rawChildren);
       if (sameStructure) {
         let updated = false;
@@ -218,12 +235,13 @@ function updateChildren(
         }
         return tree;
       }
-      // array has changed
+      // array structure has changed => create a new array TreeElement
       const prevKeys = tree.children.map(item =>
         item.type === 'CHILD' ? item.element.key : undefined
       );
       const children = rawChildren.map((item, index) => {
         const key = isValidElement(item) ? item.key : undefined;
+        // search previous item by key first, otherwise by index
         const prevIndex =
           key === undefined ? index : prevKeys.indexOf(key) >= 0 ? prevKeys.indexOf(key) : index;
         const prev = tree.children[prevIndex];
@@ -233,37 +251,54 @@ function updateChildren(
         return updateChildren(prev, item, parent, render);
       });
       const value = children.map(v => v.value);
+      // the tree need to be processed
+      tree.state = 'updated';
+      // mark children not in the new tree as removed
       tree.children.forEach(prev => {
         if (children.indexOf(prev) < 0) {
           prev.state = 'removed';
         }
       });
-      tree.state = 'updated';
-
-      const nextTree: TreeElementArray = {
-        id: nextId(),
-        type: 'ARRAY',
+      const nextTree = createTreeElement('ARRAY', {
         children,
         value,
         previous: tree,
-        state: 'created',
-      };
+      });
       return nextTree;
     }
     // not an array anymore
     const nextTree = mountChildren(rawChildren, parent, render);
+    tree.state = 'removed';
     nextTree.previous = tree;
-    nextTree.previous.state = 'removed';
     return nextTree;
-  }
-  throw new Error(`Unsuported update !`);
+  },
+  MAP: () => {
+    throw new Error('Update on Map children is not implemented yet');
+  },
+  SET: () => {
+    throw new Error('Update on Set children is not implemented yet');
+  },
+};
+
+/**
+ * Returns
+ *   1. The same reference if the structure is the same
+ *      or a new reference if the struture has changed
+ *   2. tree.updated if effects should run
+ */
+function updateChildren(
+  tree: TreeElement,
+  rawChildren: any,
+  parent: Instance,
+  render: RenderComponent
+): TreeElement {
+  return CHILDREN_UPDATES[tree.type](tree as any, rawChildren, parent, render);
 }
 
 /**
- * We need a new structure if
- *  - the two arrays have different lengths
- *  - or keys have moved
- * false positive are not an issue since
+ * Array have the same structure if
+ *  - they have the same length
+ *  - the keys have not moved
  */
 function sameArrayStructure(prev: Array<TreeElement>, children: Array<any>): boolean {
   if (prev.length !== children.length) {
@@ -274,11 +309,41 @@ function sameArrayStructure(prev: Array<TreeElement>, children: Array<any>): boo
   return arrayShallowEqual(prevKeys, childrenKeys);
 }
 
-function effects(
-  tree: TreeElement,
-  type: 'EFFECT' | 'LAYOUT_EFFECT',
-  onItem: (instance: Instance) => void
-) {
+const CHILDREN_EFFECT: {
+  [K in TreeElementType]: (
+    tree: TreeElement<K>,
+    type: EffectType,
+    onItem: (instance: Instance) => void
+  ) => void;
+} = {
+  NULL: () => {},
+  ARRAY: (tree, type, onItem) => {
+    tree.children.forEach(child => {
+      effects(child, type, onItem);
+    });
+  },
+  OBJECT: (tree, type, onItem) => {
+    Object.keys(tree.children).forEach(key => {
+      effects(tree.children[key], type, onItem);
+    });
+  },
+  CHILD: (tree, _type, onItem) => {
+    onItem(tree.instance);
+    return;
+  },
+  MAP: (tree, type, onItem) => {
+    tree.children.forEach(item => {
+      effects(item, type, onItem);
+    });
+  },
+  SET: (tree, type, onItem) => {
+    tree.children.forEach(item => {
+      effects(item, type, onItem);
+    });
+  },
+};
+
+function effects(tree: TreeElement, type: EffectType, onItem: (instance: Instance) => void) {
   const state = tree.state;
   if (state === 'stable' || state === 'removed') {
     return;
@@ -287,102 +352,43 @@ function effects(
     // once effect is done, the tree is stable
     tree.state = 'stable';
   }
-  if (tree.type === 'NULL') {
-    return;
-  }
-  if (tree.type === 'ARRAY') {
-    tree.children.forEach(child => {
-      effects(child, type, onItem);
-    });
-    return;
-  }
-  if (tree.type === 'OBJECT') {
-    Object.keys(tree.children).forEach(key => {
-      effects(tree.children[key], type, onItem);
-    });
-    return;
-  }
-  if (tree.type === 'CHILD') {
-    onItem(tree.instance);
-    return;
-  }
-  throw new Error(`Unhandled tree type for effect`);
+  return CHILDREN_EFFECT[tree.type](tree as any, type, onItem);
 }
 
-function cleanup(
-  tree: TreeElement,
-  type: 'EFFECT' | 'LAYOUT_EFFECT',
-  onItem: (instance: Instance, force: boolean) => void
-) {
-  cleanupInternal(tree, type, onItem, null);
-}
-
-function cleanupInternal(
-  tree: TreeElement,
-  type: 'EFFECT' | 'LAYOUT_EFFECT',
-  onItem: (instance: Instance, force: boolean) => void,
-  parentState: 'removed' | null
-) {
-  const state: TreeElementState = parentState || tree.state;
-  if (state === 'stable') {
+const CHILDREN_CLEANUP: {
+  [K in TreeElementType]: (
+    tree: TreeElement<K>,
+    type: EffectType,
+    onItem: (instance: Instance, force: boolean) => void,
+    state: Exclude<TreeElementState, 'stable'>
+  ) => void;
+} = {
+  NULL: () => {
     return;
-  }
-  if (tree.type === 'NULL') {
-    if (state === 'created' || state === 'updated') {
-      if (tree.previous) {
-        cleanupInternal(tree.previous, type, onItem, null);
-        if (type === 'EFFECT') {
-          tree.previous = null;
-        }
-      }
-    }
-    return;
-  }
-  if (tree.type === 'ARRAY') {
+  },
+  ARRAY: (tree, type, onItem, state) => {
     if (state === 'removed') {
       tree.children.forEach(child => {
         cleanupInternal(child, type, onItem, 'removed');
       });
       return;
     }
-    if (state === 'created' || state === 'updated') {
-      if (tree.previous) {
-        cleanupInternal(tree.previous, type, onItem, null);
-        if (type === 'EFFECT') {
-          tree.previous = null;
-        }
-        return;
-      }
-      tree.children.forEach(child => {
-        cleanupInternal(child, type, onItem, null);
-      });
-      return;
-    }
-    return;
-  }
-  if (tree.type === 'OBJECT') {
+    tree.children.forEach(child => {
+      cleanupInternal(child, type, onItem, null);
+    });
+  },
+  OBJECT: (tree, type, onItem, state) => {
     if (state === 'removed') {
       Object.keys(tree.children).forEach(key => {
         cleanupInternal(tree.children[key], type, onItem, 'removed');
       });
       return;
     }
-    if (state === 'created' || state === 'updated') {
-      if (tree.previous) {
-        cleanupInternal(tree.previous, type, onItem, null);
-        if (type === 'EFFECT') {
-          tree.previous = null;
-        }
-        return;
-      }
-      Object.keys(tree.children).forEach(key => {
-        cleanupInternal(tree.children[key], type, onItem, null);
-      });
-      return;
-    }
-    return;
-  }
-  if (tree.type === 'CHILD') {
+    Object.keys(tree.children).forEach(key => {
+      cleanupInternal(tree.children[key], type, onItem, null);
+    });
+  },
+  CHILD: (tree, _type, onItem, state) => {
     if (state === 'created') {
       // when a child is 'created' we don't need to cleanup
       return;
@@ -391,11 +397,43 @@ function cleanupInternal(
       onItem(tree.instance, true);
       return;
     }
-    if (state === 'updated') {
-      onItem(tree.instance, false);
-      return;
+    onItem(tree.instance, false);
+  },
+  MAP: () => {
+    throw new Error('Cleanup on Map not implemented yet');
+  },
+  SET: () => {
+    throw new Error('Cleanup on Set not implemented yet');
+  },
+};
+
+function cleanup(
+  tree: TreeElement,
+  type: EffectType,
+  onItem: (instance: Instance, force: boolean) => void
+) {
+  cleanupInternal(tree, type, onItem, null);
+}
+
+function cleanupInternal(
+  tree: TreeElement,
+  type: EffectType,
+  onItem: (instance: Instance, force: boolean) => void,
+  parentState: 'removed' | null
+) {
+  const state: TreeElementState = parentState || tree.state;
+  if (state === 'stable') {
+    return;
+  }
+  // if we are not in remove mode and there is a previous
+  // we cleanup this instead in a force remove mode
+  if (state !== 'removed' && tree.previous) {
+    CHILDREN_CLEANUP[tree.type](tree.previous as any, type, onItem, state);
+    if (type === 'EFFECT') {
+      // if we clenup effects we don't need this anymore
+      tree.previous = null;
     }
     return;
   }
-  throw new Error(`Unhandled tree type for cleanup`);
+  return CHILDREN_CLEANUP[tree.type](tree as any, type, onItem, state);
 }

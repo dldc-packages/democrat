@@ -80,8 +80,14 @@ const AppStore: Component<{}, { count: number }> = () => {
   };
 };
 
-Promise.resolve().then(() => {
-  log('render: promise');
-});
+function runExample() {
+  Promise.resolve().then(() => {
+    log('render: promise');
+  });
 
-Democrat.render(Democrat.createElement(AppStore));
+  const store = Democrat.render(Democrat.createElement(AppStore));
+
+  return () => store.destroy();
+}
+
+export default runExample;

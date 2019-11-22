@@ -1,6 +1,5 @@
-import { SubscribeMethod } from 'suub';
 import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE } from './symbols';
-import { TreeElement } from './ChildrenUtils';
+import { TreeElement } from './TreeElement';
 
 export type Dispatch<A> = (value: A) => void;
 export type SetStateAction<S> = S | ((prevState: S) => S);
@@ -12,9 +11,14 @@ export interface MutableRefObject<T> {
   current: T;
 }
 
+export type EffectType = 'EFFECT' | 'LAYOUT_EFFECT';
+
+type Unsubscribe = () => void;
+
 export interface Store<S> {
   getState: () => S;
-  subscribe: SubscribeMethod<void>;
+  subscribe: (onChange: () => void) => Unsubscribe;
+  destroy: () => void;
 }
 
 export type Key = string | number | undefined;
@@ -99,6 +103,8 @@ export interface Instance {
   nextHooks: Array<HooksData>;
   onIdle: OnIdle;
   key: Key;
+  // is set to true when the component or one of it's children has a new state
+  // and thus need to be rendered even if props are equal
   dirty: boolean;
 }
 

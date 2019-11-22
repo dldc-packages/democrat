@@ -43,6 +43,14 @@ export const createInstance = (() => {
 
 export function createElement<P, T>(
   component: Component<P, T>,
+  props: Props<P>
+): DemocratElement<P, T>;
+export function createElement<P, T>(
+  component: Component<P, T>,
+  props?: Props<P>
+): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' };
+export function createElement<P, T>(
+  component: Component<P, T>,
   props: Props<P> = {} as any
 ): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' } {
   const key = props.key;
@@ -135,3 +143,19 @@ export function mapObject<T extends { [key: string]: any }, U>(
 
 export const globalSetTimeout: typeof window.setTimeout = setTimeout as any;
 export const globalClearTimeout: typeof window.clearTimeout = clearTimeout as any;
+
+export function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): Map<K, U> {
+  const result = new Map<K, U>();
+  source.forEach((v, k) => {
+    result.set(k, mapper(v, k));
+  });
+  return result;
+}
+
+export function mapSet<V, U>(source: Set<V>, mapper: (v: V) => U): Set<U> {
+  const result = new Set<U>();
+  source.forEach(v => {
+    result.add(mapper(v));
+  });
+  return result;
+}
