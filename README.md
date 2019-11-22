@@ -16,6 +16,31 @@ This project is not tested yet and should not be considered stable !
 npm install democrat
 ```
 
+## Gist
+
+```ts
+import Democrat from 'democrat';
+
+const MainStore = () => {
+  const [count, setCount] = Democrat.useState(0);
+
+  const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
+
+  return {
+    count,
+    increment,
+  };
+};
+
+const store = Democrat.render(Democrat.createElement(Store));
+store.subscribe(render);
+render();
+
+function render = () => {
+  console.log(store.getState());
+};
+```
+
 ## How is this different from React ?
 
 There are two main diffrences with React
@@ -46,40 +71,6 @@ const Parent = () => {
   //...
   return {};
 };
-```
-
-## Gist
-
-```ts
-import Democrat from 'democrat';
-
-const Store = () => {
-  const [count, setCount] = Democrat.useState(0);
-
-  const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
-  const decrement = Democrat.useCallback(() => setCount(prev => prev - 1), []);
-
-  const result = Democrat.useMemo(
-    () => ({
-      count,
-      increment,
-      decrement,
-    }),
-    [count, increment, decrement]
-  );
-
-  return result;
-};
-
-const store = Democrat.render(Democrat.createElement(Store));
-
-const render = () => {
-  console.log(store.getState());
-};
-
-store.subscribe(render);
-
-render();
 ```
 
 ## Components
