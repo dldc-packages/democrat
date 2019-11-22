@@ -388,6 +388,28 @@ const CHILDREN_CLEANUP: {
       cleanupInternal(tree.children[key], type, onItem, null);
     });
   },
+  MAP: (tree, type, onItem, state) => {
+    if (state === 'removed') {
+      tree.children.forEach(item => {
+        cleanupInternal(item, type, onItem, 'removed');
+      });
+      return;
+    }
+    tree.children.forEach(item => {
+      cleanupInternal(item, type, onItem, null);
+    });
+  },
+  SET: (tree, type, onItem, state) => {
+    if (state === 'removed') {
+      tree.children.forEach(item => {
+        cleanupInternal(item, type, onItem, 'removed');
+      });
+      return;
+    }
+    tree.children.forEach(item => {
+      cleanupInternal(item, type, onItem, null);
+    });
+  },
   CHILD: (tree, _type, onItem, state) => {
     if (state === 'created') {
       // when a child is 'created' we don't need to cleanup
@@ -398,12 +420,6 @@ const CHILDREN_CLEANUP: {
       return;
     }
     onItem(tree.instance, false);
-  },
-  MAP: () => {
-    throw new Error('Cleanup on Map not implemented yet');
-  },
-  SET: () => {
-    throw new Error('Cleanup on Set not implemented yet');
   },
 };
 
