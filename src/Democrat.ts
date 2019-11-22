@@ -28,19 +28,23 @@ import {
   LayoutEffectHookData,
   MemoHookData,
   DemocratElement,
+  MutableRefObject,
+  RefHookData,
 } from './types';
 
 export const Democrat = {
   [DEMOCRAT_INTERNAL_STATE]: getInternalState(),
   createElement,
   isValidElement,
+  render,
+  // hooks
   useChildren,
   useState,
   useEffect,
   useMemo,
   useCallback,
   useLayoutEffect,
-  render,
+  useRef,
 };
 
 function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
@@ -262,8 +266,26 @@ function useCallback<T extends (...args: any[]) => unknown>(callback: T, deps: D
   return Democrat.useMemo(() => callback, deps);
 }
 
-// useRef<T extends unknown>(initialValue: T): MutableRefObject<T>;
-// useRef<T = undefined>(): MutableRefObject<T | undefined>;
+function useRef<T extends unknown>(initialValue: T): MutableRefObject<T>;
+function useRef<T = undefined>(): MutableRefObject<T | undefined>;
+function useRef<T>(initialValue?: T): MutableRefObject<T> {
+  const hook = getCurrentHook();
+  if (hook === null) {
+    const memoHook: RefHookData = {
+      type: 'REF',
+      ref: {
+        current: initialValue,
+      },
+    };
+    setCurrentHook(memoHook);
+    return memoHook.ref;
+  }
+  if (hook.type !== 'REF') {
+    throw new Error('Invalid Hook type');
+  }
+  return hook.ref;
+}
+
 // useContext<T>(context: Context<T>): T;
 // useImperativeHandle<T, R extends T>(ref: Ref<T>|undefined, init: () => R, deps?: DependencyList): void;
 

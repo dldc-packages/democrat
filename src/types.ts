@@ -7,9 +7,10 @@ export type SetStateAction<S> = S | ((prevState: S) => S);
 export type DependencyList = ReadonlyArray<any>;
 export type EffectCleanup = () => void | undefined;
 export type EffectCallback = () => void | EffectCleanup;
-// interface MutableRefObject<T> {
-//   current: T;
-// }
+
+export interface MutableRefObject<T> {
+  current: T;
+}
 
 export interface Store<S> {
   getState: () => S;
@@ -52,6 +53,11 @@ export interface ChildrenHookData {
   children: TreeElement;
 }
 
+export type RefHookData = {
+  type: 'REF';
+  ref: MutableRefObject<any>;
+};
+
 export type EffectHookData = {
   type: 'EFFECT';
   effect: EffectCallback;
@@ -79,7 +85,8 @@ export type HooksData =
   | ChildrenHookData
   | EffectHookData
   | MemoHookData
-  | LayoutEffectHookData;
+  | LayoutEffectHookData
+  | RefHookData;
 
 export type OnIdleExec = (render: () => void) => void;
 export type OnIdle = (exec: OnIdleExec) => void;
