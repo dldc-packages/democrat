@@ -6,6 +6,14 @@
 
 > React, but for state management !
 
+## Install
+
+```bash
+npm install democrat@next
+```
+
+**NOTE**: Make sure to install with the `@next` tag !
+
 ## Gist
 
 ```ts
