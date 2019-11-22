@@ -47,7 +47,6 @@ export function createTreeElement<T extends TreeElementType>(
   return {
     type,
     id: nextId(),
-    previous: null,
     state: 'created',
     ...data,
   } as any;

@@ -193,13 +193,30 @@ const CHILDREN_UPDATES: {
         return tree;
       }
       // keys have changed => build new tree
-      const children = mapObject(rawChildren, (val, key) => {
-        const prevItem = tree.children[key];
-        return prevItem
-          ? updateChildren(prevItem, val, parent, render)
-          : mountChildren(rawChildren[key], parent, render);
+      const children: { [key: string]: TreeElement } = {};
+      const allKeys = new Set([...Object.keys(rawChildren), ...Object.keys(tree.children)]);
+      allKeys.forEach(key => {
+        const prev = tree.children[key];
+        const next = rawChildren[key];
+        if (prev && !next) {
+          // key removed
+          prev.state = 'removed';
+          return;
+        }
+        if (!prev && next) {
+          // key added
+          children[key] = mountChildren(next, parent, render);
+          return;
+        }
+        // key updated
+        const updated = updateChildren(prev, next, parent, render);
+        children[key] = updated;
+        if (updated !== prev) {
+          prev.state = 'removed';
+        }
       });
       const value = mapObject(children, v => v.value);
+      tree.state = 'updated';
       const nextTree = createTreeElement('OBJECT', {
         children,
         value,
@@ -272,8 +289,67 @@ const CHILDREN_UPDATES: {
     nextTree.previous = tree;
     return nextTree;
   },
-  MAP: () => {
-    throw new Error('Update on Map children is not implemented yet');
+  MAP: (tree, rawChildren, parent, render) => {
+    if (rawChildren instanceof Map) {
+      const sameStructure = sameMapStructure(tree.children, rawChildren);
+      if (sameStructure) {
+        let updated = false;
+        tree.children = mapMap(rawChildren, child => {
+          const newItem = updateChildren(child, child, parent, render);
+          if (updated === false && newItem.state !== 'stable') {
+            updated = true;
+          }
+          return newItem;
+        });
+        tree.state = updated ? 'updated' : 'stable';
+        if (updated) {
+          // Update value
+          tree.value = mapMap(tree.children, v => v.value);
+        }
+        return tree;
+      }
+      // keys have changed
+      const allKeys = new Set([
+        ...Array.from(rawChildren.keys()),
+        ...Array.from(tree.children.keys()),
+      ]);
+      const children = new Map<any, TreeElement>();
+      allKeys.forEach(key => {
+        const prev = tree.children.get(key);
+        const next = rawChildren.get(key);
+        if (prev && !next) {
+          // key removed
+          prev.state = 'removed';
+          return;
+        }
+        if (!prev && next) {
+          // key added
+          children.set(key, mountChildren(next, parent, render));
+          return;
+        }
+        if (prev && next) {
+          // key updated
+          const updated = updateChildren(prev, next, parent, render);
+          children.set(key, updated);
+          if (updated !== prev) {
+            prev.state = 'removed';
+          }
+        }
+      });
+      const value = mapMap(tree.children, v => v.value);
+      tree.state = 'updated';
+      const nextTree = createTreeElement('MAP', {
+        children,
+        value,
+        previous: tree,
+      });
+      return nextTree;
+    }
+    // not map anymore
+    const nextTree = mountChildren(rawChildren, parent, render);
+    tree.state = 'removed';
+    nextTree.previous = tree;
+    return nextTree;
   },
   SET: () => {
     throw new Error('Update on Set children is not implemented yet');
@@ -307,6 +383,19 @@ function sameArrayStructure(prev: Array<TreeElement>, children: Array<any>): boo
   const prevKeys = prev.map(item => (item.type === 'CHILD' ? item.element.key : undefined));
   const childrenKeys = prev.map(item => (isValidElement(item) ? item.key : undefined));
   return arrayShallowEqual(prevKeys, childrenKeys);
+}
+
+function sameMapStructure(prev: Map<any, TreeElement>, children: Map<any, any>): boolean {
+  if (prev.size !== children.size) {
+    return false;
+  }
+  let allIn = true;
+  prev.forEach((_v, k) => {
+    if (allIn === true && children.has(k) === false) {
+      allIn = false;
+    }
+  });
+  return allIn;
 }
 
 const CHILDREN_EFFECT: {
