@@ -16,6 +16,38 @@ This project is not tested yet and should not be considered stable !
 npm install democrat
 ```
 
+## How is this different from React ?
+
+There are two main diffrences with React
+
+### 1. Return value
+
+With Democrat instead of JSX, you return data. More precisly, you return what you want to expose in your state.
+
+### 2. `useChildren`
+
+In React to use other component you have to return an element of it in your render. In Democrat you can't do that since what you return is your state. Instead you can use the `useChildren` hook.
+The `useChildren` is very similar to when you return `<MyComponent />` in React:
+
+- It will create a diff to define what to update/mount/unmount
+- If props don't change it will not re-render but re-use the previous result instead
+  But the difference is that you get the result of that children an can use it in the parent component.
+
+```ts
+const Child = () => {
+  // ..
+  return { some: 'data' };
+};
+
+const Parent = () => {
+  //...
+  const childData = Democrat.useChildren(Democrat.createElement(Child));
+  // childData = { some: 'data' }
+  //...
+  return {};
+};
+```
+
 ## Gist
 
 ```ts
