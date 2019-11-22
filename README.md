@@ -6,13 +6,15 @@
 
 > React, but for state management !
 
+## ⚠️⚠️ NOT TESTED ⚠️⚠️
+
+This project is not tested yet and should not be considered stable !
+
 ## Install
 
 ```bash
-npm install democrat@next
+npm install democrat
 ```
-
-**NOTE**: Make sure to install with the `@next` tag !
 
 ## Gist
 
