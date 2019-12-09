@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="400px" viewBox="0 0 800 400" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 60 (88103) - https://sketch.com -->
+    <title>logo-only</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M22.7999986,0 C7.59999955,34.3999979 0,72.7999957 0,115.199993 C0,157.599991 7.59999955,195.999988 22.7999986,230.399986 L310.799981,144 L598.799964,230.399986 C613.999963,195.999988 621.599963,157.599991 621.599963,115.199993 C621.599963,72.7999957 613.999963,34.3999979 598.799964,0 L310.799981,86.3999949 L22.7999986,0 Z" id="path-1"></path>
+        <filter x="-1.1%" y="-3.4%" width="102.3%" height="109.9%" filterUnits="objectBoundingBox" id="filter-3">
+            <feMorphology radius="3.59999979" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1"></feMorphology>
+            <feOffset dx="0" dy="7" in="shadowSpreadOuter1" result="shadowOffsetOuter1"></feOffset>
+            <feComposite in="shadowOffsetOuter1" in2="SourceAlpha" operator="out" result="shadowOffsetOuter1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0.756862745   0 0 0 0 0.756862745   0 0 0 0 0.756862745  0 0 0 1 0" type="matrix" in="shadowOffsetOuter1"></feColorMatrix>
+        </filter>
+    </defs>
+    <g id="logo-only" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group-5" transform="translate(89.000000, 85.000000)">
+            <mask id="mask-2" fill="white">
+                <use xlink:href="#path-1"></use>
+            </mask>
+            <g id="Path-2">
+                <use fill="black" fill-opacity="1" filter="url(#filter-3)" xlink:href="#path-1"></use>
+                <use stroke="#000000" stroke-width="7.19999957" fill="#FFFFFF" fill-rule="evenodd" xlink:href="#path-1"></use>
+            </g>
+            <circle id="Oval" stroke="#000000" stroke-width="7.19999957" fill="#000000" mask="url(#mask-2)" cx="310.799981" cy="115.199993" r="63.5999962"></circle>
+        </g>
+    </g>
+</svg>
