@@ -19,7 +19,7 @@ npm install democrat
 ## Gist
 
 ```ts
-import Democrat from 'democrat';
+import * as Democrat from 'democrat';
 
 const MainStore = () => {
   const [count, setCount] = Democrat.useState(0);
@@ -80,9 +80,9 @@ All you need to do is add this code before the first `Democrat.render`.
 
 ```js
 import React from 'react';
-import Democrat from 'democrat';
+import { supportReactHooks } from 'democrat';
 
-Democrat.supportReactHooks(React);
+supportReactHooks(React);
 ```
 
 Note that for now only the following hooks are supported:
@@ -97,7 +97,7 @@ Note that for now only the following hooks are supported:
 ## Components
 
 ```ts
-import Democrat from 'democrat';
+import * as Democrat from 'democrat';
 
 const Counter = () => {
   const [count, setCount] = Democrat.useState(1);
