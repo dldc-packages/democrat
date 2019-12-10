@@ -1,5 +1,5 @@
 // by importing as React we get eslint hook plugin working for free !
-import React from '../../src';
+import * as React from '../../src';
 
 const Counter = ({ index }: { index: number }) => {
   const [count, setCounter] = React.useState(0);

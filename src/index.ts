@@ -1,4 +1,17 @@
-export { Democrat as default } from './Democrat';
+export {
+  createElement,
+  isValidElement,
+  render,
+  supportReactHooks,
+  // hooks
+  useChildren,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+} from './Democrat';
 
 export {
   Component,

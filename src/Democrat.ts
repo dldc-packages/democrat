@@ -4,12 +4,10 @@ import { getInternalState } from './Global';
 import { ComponentUtils } from './ComponentUtils';
 import {
   createInstance,
-  createElement,
   depsChanged,
   markDirty,
   globalSetTimeout,
   globalClearTimeout,
-  isValidElement,
 } from './utils';
 import {
   Instance,
@@ -32,11 +30,9 @@ import {
   EffectType,
 } from './types';
 
-export const Democrat = {
-  createElement,
-  isValidElement,
-  render,
-  supportReactHooks,
+export { isValidElement, createElement } from './utils';
+
+const Hooks = {
   // hooks
   useChildren,
   useState,
@@ -47,7 +43,7 @@ export const Democrat = {
   useRef,
 };
 
-function supportReactHooks(React: any) {
+export function supportReactHooks(React: any) {
   if (getInternalState().reactHooksSupported) {
     return;
   }
@@ -56,14 +52,14 @@ function supportReactHooks(React: any) {
     const originalFn = React[name];
     React[name] = (...args: Array<any>) => {
       if (getInternalState().rendering) {
-        return (Democrat as any)[name](...args);
+        return (Hooks as any)[name](...args);
       }
       return originalFn(...args);
     };
   });
 }
 
-function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
+export function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
   const sub = Subscription.create();
   let state: T;
   let destroyed: boolean = false;
@@ -187,7 +183,7 @@ function setCurrentHook(hook: HooksData) {
   instance.nextHooks.push(hook);
 }
 
-function useChildren<C extends Children>(children: C): ResolveType<C> {
+export function useChildren<C extends Children>(children: C): ResolveType<C> {
   const hook = getCurrentHook();
   const parent = getCurrentInstance();
   if (hook === null) {
@@ -206,7 +202,7 @@ function useChildren<C extends Children>(children: C): ResolveType<C> {
   return hook.children.value;
 }
 
-function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>] {
+export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>] {
   const hook = getCurrentHook();
   const instance = getCurrentInstance();
   if (hook === null) {
@@ -232,11 +228,11 @@ function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S
   return [hook.value, hook.setValue];
 }
 
-function useEffect(effect: EffectCallback, deps?: DependencyList): void {
+export function useEffect(effect: EffectCallback, deps?: DependencyList): void {
   return useEffectInternal('EFFECT', effect, deps);
 }
 
-function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {
+export function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): void {
   return useEffectInternal('LAYOUT_EFFECT', effect, deps);
 }
 
@@ -268,7 +264,7 @@ function useEffectInternal(type: EffectType, effect: EffectCallback, deps?: Depe
   return;
 }
 
-function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T {
+export function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T {
   const hook = getCurrentHook();
   if (hook === null) {
     const memoHook: MemoHookData = {
@@ -290,13 +286,17 @@ function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T {
   return hook.value;
 }
 
-function useCallback<T extends (...args: any[]) => unknown>(callback: T, deps: DependencyList): T {
-  return Democrat.useMemo(() => callback, deps);
+export function useCallback<T extends (...args: any[]) => unknown>(
+  callback: T,
+  deps: DependencyList
+): T {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  return useMemo(() => callback, deps);
 }
 
-function useRef<T extends unknown>(initialValue: T): MutableRefObject<T>;
-function useRef<T = undefined>(): MutableRefObject<T | undefined>;
-function useRef<T>(initialValue?: T): MutableRefObject<T> {
+export function useRef<T extends unknown>(initialValue: T): MutableRefObject<T>;
+export function useRef<T = undefined>(): MutableRefObject<T | undefined>;
+export function useRef<T>(initialValue?: T): MutableRefObject<T> {
   const hook = getCurrentHook();
   if (hook === null) {
     const memoHook: RefHookData = {

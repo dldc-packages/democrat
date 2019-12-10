@@ -1,4 +1,4 @@
-import Democrat from '../../src';
+import * as Democrat from '../../src';
 
 const Store = () => {
   const [count, setCount] = Democrat.useState(0);

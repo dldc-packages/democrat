@@ -1,4 +1,4 @@
-import Democrat, { Component } from '../../src';
+import * as Democrat from '../../src';
 
 let logCount = 0;
 const log = (...vals) => console.log(logCount++, ...vals);
@@ -7,7 +7,7 @@ const log = (...vals) => console.log(logCount++, ...vals);
 
 let nextNum = 0;
 
-const Counter: Component<{}, null> = () => {
+const Counter: Democrat.Component<{}, null> = () => {
   const [count, setCounter] = Democrat.useState(0);
 
   const num = nextNum++;
@@ -42,7 +42,7 @@ const Counter: Component<{}, null> = () => {
   return null;
 };
 
-const AppStore: Component<{}, { count: number }> = () => {
+const AppStore: Democrat.Component<{}, { count: number }> = () => {
   const [count, setCounter] = Democrat.useState(0);
 
   log('App: render', count, typeof setCounter);
