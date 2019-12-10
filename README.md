@@ -13,7 +13,10 @@ This project is not tested yet and should not be considered stable !
 ## Install
 
 ```bash
+# npm
 npm install democrat
+# yarn
+yarn add democrat
 ```
 
 ## Gist
@@ -56,7 +59,8 @@ The `useChildren` is very similar to when you return `<MyComponent />` in React:
 
 - It will create a diff to define what to update/mount/unmount
 - If props don't change it will not re-render but re-use the previous result instead
-  But the difference is that you get the result of that children an can use it in the parent component.
+
+But the difference is that you get the result of that children an can use it in the parent component.
 
 ```ts
 const Child = () => {
@@ -75,7 +79,7 @@ const Parent = () => {
 
 ## Using hooks library
 
-Because Democrat's hooks works just like React's ones with a little trick you can use any React hook in Democrat.
+Because Democrat's hooks works just like React's ones, with a little trick you can use any React hook in Democrat.
 All you need to do is add this code before the first `Democrat.render`.
 
 ```js
@@ -85,7 +89,7 @@ import Democrat from 'democrat';
 Democrat.supportReactHooks(React);
 ```
 
-Note that for now only the following hooks are supported:
+**Note**: For now, only the following hooks are supported:
 
 - `useState`
 - `useEffect`
