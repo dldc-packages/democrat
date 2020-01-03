@@ -107,3 +107,24 @@ test('multiple counters (object children)', () => {
     }
   `);
 });
+
+test('render a context', () => {
+  const NumCtx = Democrat.createContext<number>(10);
+
+  const Store = () => {
+    const num = Democrat.useContext(NumCtx);
+    const [count, setCount] = Democrat.useState(0);
+
+    return {
+      count: count + num,
+      setCount,
+    };
+  };
+  const store = Democrat.render(
+    Democrat.createElement(NumCtx.Provider, {
+      value: 42,
+      children: Democrat.createElement(Store),
+    })
+  );
+  expect(store.getState().count).toEqual(42);
+});

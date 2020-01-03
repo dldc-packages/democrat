@@ -1,5 +1,6 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE } from './symbols';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE, DEMOCRAT_CONTEXT } from './symbols';
 import { TreeElement } from './TreeElement';
+import { ContextStack } from './ContextStack';
 
 export type Dispatch<A> = (value: A) => void;
 export type SetStateAction<S> = S | ((prevState: S) => S);
@@ -23,11 +24,66 @@ export interface Store<S> {
 
 export type Key = string | number | undefined;
 
-export interface DemocratElement<P, T> {
+export interface DemocratContextProvider<P> {
+  [DEMOCRAT_CONTEXT]: 'PROVIDER';
+  context: Context<P>;
+}
+
+export type ContextConsumerRender<T, HasDefault extends boolean, C> = (
+  value: HasDefault extends true ? T : T | undefined
+) => C;
+
+export interface DemocratContextConsumer<P> {
+  [DEMOCRAT_CONTEXT]: 'CONSUMER';
+  context: Context<P>;
+}
+
+export type ContextProviderProps<P, T> = Props<{
+  value: P;
+  children: T;
+}>;
+
+export type ContextConsumerProps<P, T> = Props<{
+  children: ContextConsumerRender<P, boolean, T>;
+}>;
+
+export interface DemocratElementComponent<P, T> {
   [DEMOCRAT_ELEMENT]: true;
-  component: Component<P, T>;
+  type: Component<P, T>;
   props: P;
   key: Key;
+}
+
+export interface DemocratElementProvider<P, T> {
+  [DEMOCRAT_ELEMENT]: true;
+  type: DemocratContextProvider<P>;
+  props: ContextProviderProps<P, T>;
+  key: Key;
+}
+
+export interface DemocratElementConsumer<P, T> {
+  [DEMOCRAT_ELEMENT]: true;
+  type: DemocratContextConsumer<P>;
+  props: ContextConsumerProps<P, T>;
+  key: Key;
+}
+
+/**
+ * For components: P is Props, T is return type
+ * For contexts: P is Context value, T is return type
+ */
+export type DemocratElement<P, T> =
+  | DemocratElementComponent<P, T>
+  | DemocratElementProvider<P, T>
+  | DemocratElementConsumer<P, T>;
+
+export interface Context<T, HasDefault extends boolean = boolean> {
+  [DEMOCRAT_CONTEXT]: {
+    hasDefault: HasDefault;
+    defaultValue: T;
+  };
+  Consumer: DemocratContextConsumer<T>;
+  Provider: DemocratContextProvider<T>;
 }
 
 export type Children =
@@ -54,7 +110,7 @@ export interface StateHookData {
 
 export interface ChildrenHookData {
   type: 'CHILDREN';
-  children: TreeElement;
+  tree: TreeElement;
 }
 
 export type RefHookData = {
@@ -102,6 +158,7 @@ export interface Instance {
   hooks: Array<HooksData> | null;
   nextHooks: Array<HooksData>;
   onIdle: OnIdle;
+  context: ContextStack | null;
   key: Key;
   // is set to true when the component or one of it's children has a new state
   // and thus need to be rendered even if props are equal

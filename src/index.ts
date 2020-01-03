@@ -1,5 +1,6 @@
 export {
   createElement,
+  createContext,
   isValidElement,
   render,
   supportReactHooks,
@@ -11,6 +12,8 @@ export {
   useCallback,
   useLayoutEffect,
   useRef,
+  useContext,
+  useContextOrThrow,
 } from './Democrat';
 
 export {

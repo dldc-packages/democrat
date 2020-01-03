@@ -1,6 +1,5 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE } from './symbols';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE, DEMOCRAT_CONTEXT } from './symbols';
 import {
-  DemocratElement,
   Instance,
   OnIdle,
   Key,
@@ -8,7 +7,18 @@ import {
   DependencyList,
   Props,
   AllOptional,
+  Context,
+  DemocratElement,
+  DemocratContextConsumer,
+  ContextConsumerProps,
+  DemocratContextProvider,
+  ContextProviderProps,
+  ResolveType,
+  DemocratElementComponent,
+  DemocratElementProvider,
+  DemocratElementConsumer,
 } from './types';
+import { ContextStack } from './ContextStack';
 
 export function isValidElement(maybe: any): maybe is DemocratElement<any, any> {
   return maybe && maybe[DEMOCRAT_ELEMENT] === true;
@@ -22,12 +32,13 @@ interface CreateInstanceParams {
   onIdle: OnIdle;
   parent: null | Instance;
   key?: Key;
+  context?: ContextStack | null;
 }
 
 export const createInstance = (() => {
   let nextInstanceId = 0;
 
-  return ({ onIdle, key, parent }: CreateInstanceParams): Instance => {
+  return ({ onIdle, key, parent, context = null }: CreateInstanceParams): Instance => {
     return {
       [DEMOCRAT_INSTANCE]: true,
       id: nextInstanceId++,
@@ -36,11 +47,20 @@ export const createInstance = (() => {
       key,
       onIdle,
       parent,
+      context,
       dirty: false,
     };
   };
 })();
 
+export function createElement<P, T>(
+  context: DemocratContextConsumer<P>,
+  props: ContextConsumerProps<P, T>
+): DemocratElement<P, ResolveType<T>>;
+export function createElement<P, T>(
+  context: DemocratContextProvider<P>,
+  props: ContextProviderProps<P, T>
+): DemocratElement<P, ResolveType<T>>;
 export function createElement<P, T>(
   component: Component<P, T>,
   props: Props<P>
@@ -50,14 +70,14 @@ export function createElement<P, T>(
   props?: Props<P>
 ): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' };
 export function createElement<P, T>(
-  component: Component<P, T>,
+  component: Component<P, T> | DemocratContextProvider<P> | DemocratContextConsumer<P>,
   props: Props<P> = {} as any
 ): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' } {
   const key = props.key;
   delete props.key;
   const element: DemocratElement<P, T> = {
     [DEMOCRAT_ELEMENT]: true,
-    component: component,
+    type: component as any,
     props: props,
     key,
   };
@@ -158,4 +178,44 @@ export function mapSet<V, U>(source: Set<V>, mapper: (v: V) => U): Set<U> {
     result.add(mapper(v));
   });
   return result;
+}
+
+export function createContext<T>(): Context<T, false>;
+export function createContext<T>(defaultValue: T): Context<T, true>;
+export function createContext<T>(defaultValue?: T): Context<T, boolean> {
+  const context: Context<T, boolean> = {
+    [DEMOCRAT_CONTEXT]: {
+      hasDefault: defaultValue !== undefined && arguments.length === 2,
+      defaultValue: defaultValue as any, // force undefined when there a no default value
+    },
+    Consumer: {
+      [DEMOCRAT_CONTEXT]: 'CONSUMER',
+      context: null as any,
+    },
+    Provider: {
+      [DEMOCRAT_CONTEXT]: 'PROVIDER',
+      context: null as any,
+    },
+  };
+  context.Consumer.context = context;
+  context.Provider.context = context;
+  return context;
+}
+
+export function isComponentElement(
+  element: DemocratElement<any, any>
+): element is DemocratElementComponent<any, any> {
+  return typeof element.type === 'function';
+}
+
+export function isProviderElement(
+  element: DemocratElement<any, any>
+): element is DemocratElementProvider<any, any> {
+  return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'PROVIDER';
+}
+
+export function isConsumerElement(
+  element: DemocratElement<any, any>
+): element is DemocratElementConsumer<any, any> {
+  return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'CONSUMER';
 }

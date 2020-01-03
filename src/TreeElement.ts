@@ -11,6 +11,10 @@ type TreeElementCommon = {
 
 type TreeElementData = {
   NULL: {};
+  PROVIDER: {
+    children: TreeElement;
+  };
+  CONSUMER: {};
   CHILD: {
     element: DemocratElement<any, any>;
     instance: Instance;
