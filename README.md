@@ -6,9 +6,12 @@
 
 > React, but for state management !
 
-## ⚠️⚠️ NOT TESTED ⚠️⚠️
+Democrat is a library that mimic the API of React (Components, hooks, Context...) but instead of producing DOM mutation it produces a state tree.
+You can then use this state tree as global state management system (like redux or mobx).
 
-This project is not tested yet and should not be considered stable !
+## ⚠️⚠️ NOT VERY WELL TESTED ⚠️⚠️
+
+This project is not very well tested yet and should not be considered stable !
 
 ## Install
 
@@ -73,9 +76,36 @@ const Parent = () => {
 };
 ```
 
+## `useChildren` supported data
+
+React only supports `Array`, `string`, `number` and `booleans` in JSX.
+`useChildren` supports the following data structure:
+
+- `Array` (`[]`)
+- `Object` (`{}`)
+- `Map`
+- `Set`
+
+```ts
+const Child = () => {
+  return 42;
+};
+
+const Parent = () => {
+  //...
+  const childData = Democrat.useChildren({
+    a: Democrat.createElement(Child),
+    b: Democrat.createElement(Child),
+  });
+  // childData = { a: 42, b: 42 }
+  //...
+  return {};
+};
+```
+
 ## Using hooks library
 
-Because Democrat's hooks works just like React's ones with a little trick you can use any React hook in Democrat.
+Because Democrat's hooks works just like React's ones with a little trick you can use some of the React hook in Democrat.
 All you need to do is add this code before the first `Democrat.render`.
 
 ```js
@@ -85,7 +115,7 @@ import { supportReactHooks } from 'democrat';
 supportReactHooks(React);
 ```
 
-Note that for now only the following hooks are supported:
+For now only the following hooks are supported:
 
 - `useState`
 - `useEffect`
@@ -93,6 +123,8 @@ Note that for now only the following hooks are supported:
 - `useCallback`
 - `useLayoutEffect`
 - `useRef`
+
+**Note**: While `useContext` exists in Democrat we cannot use the React version of it because of how context works (we would need to also replace `createContext` but we have no way to detect when we should create a Democrat context vs when we should create a React context...).
 
 ## Components
 
