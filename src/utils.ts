@@ -166,7 +166,7 @@ export function createContext<T>(defaultValue: T): Context<T, true>;
 export function createContext<T>(defaultValue?: T): Context<T, boolean> {
   const context: Context<T, boolean> = {
     [DEMOCRAT_CONTEXT]: {
-      hasDefault: defaultValue !== undefined && arguments.length === 2,
+      hasDefault: defaultValue !== undefined && arguments.length === 1,
       defaultValue: defaultValue as any, // force undefined when there a no default value
     },
     Consumer: {

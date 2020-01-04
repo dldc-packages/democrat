@@ -9,37 +9,34 @@ const Num2Ctx = Democrat.createContext<number>(42);
 const Child = () => {
   // num1a can be undefined if there are no provider
   const num1a = Democrat.useContext(Num1Ctx);
+
   // num1b can only be number. if no provider it will throw
-  const num1b = Democrat.useContextOrThrow(Num1Ctx);
+  // const num1b = Democrat.useContextOrThrow(Num1Ctx);
+
   // num2a is always a number because it has a default value
   const num2a = Democrat.useContext(Num2Ctx);
+
   // this will never throw
   const num2b = Democrat.useContextOrThrow(Num2Ctx);
 
   return {
     num1a,
-    num1b,
+    // num1b,
     num2a,
     num2b,
   };
 };
 
 const Parent = () => {
-  const withContext = Democrat.useChildren(
-    Democrat.createElement(Num1Ctx.Provider, {
+  const state = Democrat.useChildren({
+    withContext: Democrat.createElement(Num1Ctx.Provider, {
       value: 4,
-      children: {
-        foo: Democrat.createElement(Num1Ctx.Consumer, {
-          children: val => {
-            console.log(val);
-            return Democrat.createElement(Child);
-          },
-        }),
-      },
-    })
-  );
+      children: Democrat.createElement(Child),
+    }),
+    withoutContext: Democrat.createElement(Child),
+  });
 
-  return withContext;
+  return state;
 };
 
 function runExample() {
