@@ -28,4 +28,5 @@ export {
   Props,
   EffectCleanup,
   ResolveType,
+  Context,
 } from './types';

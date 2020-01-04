@@ -1,8 +1,5 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE, DEMOCRAT_CONTEXT } from './symbols';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols';
 import {
-  Instance,
-  OnIdle,
-  Key,
   Component,
   DependencyList,
   Props,
@@ -17,41 +14,20 @@ import {
   DemocratElementComponent,
   DemocratElementProvider,
   DemocratElementConsumer,
+  TreeElementType,
+  TreeElementCommon,
+  TreeElementData,
+  TreeElement,
+  DemocratRootElement,
 } from './types';
-import { ContextStack } from './ContextStack';
 
 export function isValidElement(maybe: any): maybe is DemocratElement<any, any> {
   return maybe && maybe[DEMOCRAT_ELEMENT] === true;
 }
 
-export function isInstance(maybe: any): maybe is Instance {
-  return maybe && maybe[DEMOCRAT_INSTANCE] === true;
+export function isRootElement(maybe: any): maybe is DemocratRootElement {
+  return maybe && maybe[DEMOCRAT_ELEMENT] === true && maybe[DEMOCRAT_ROOT] === true;
 }
-
-interface CreateInstanceParams {
-  onIdle: OnIdle;
-  parent: null | Instance;
-  key?: Key;
-  context?: ContextStack | null;
-}
-
-export const createInstance = (() => {
-  let nextInstanceId = 0;
-
-  return ({ onIdle, key, parent, context = null }: CreateInstanceParams): Instance => {
-    return {
-      [DEMOCRAT_INSTANCE]: true,
-      id: nextInstanceId++,
-      hooks: null,
-      nextHooks: [],
-      key,
-      onIdle,
-      parent,
-      context,
-      dirty: false,
-    };
-  };
-})();
 
 export function createElement<P, T>(
   context: DemocratContextConsumer<P>,
@@ -143,10 +119,15 @@ export function depsChanged(
   return !arrayShallowEqual(deps1, deps2);
 }
 
-export function markDirty(instance: Instance) {
-  let current: Instance | null = instance;
-  while (current !== null && current.dirty === false) {
-    current.dirty = true;
+export function markDirty(instance: TreeElement<'CHILD'>, limit: TreeElement | null = null) {
+  let current: TreeElement | null = instance;
+  while (current !== null && current !== limit) {
+    if (current.type === 'CHILD') {
+      if (current.dirty === true) {
+        break;
+      }
+      current.dirty = true;
+    }
     current = current.parent;
   }
 }
@@ -218,4 +199,121 @@ export function isConsumerElement(
   element: DemocratElement<any, any>
 ): element is DemocratElementConsumer<any, any> {
   return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'CONSUMER';
+}
+
+const nextId = (() => {
+  let id = 0;
+  return () => id++;
+})();
+
+export function createTreeElement<T extends TreeElementType>(
+  type: T,
+  parent: TreeElement,
+  data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root'> & TreeElementData[T]
+): TreeElement<T> {
+  return {
+    type,
+    id: nextId(),
+    state: 'created',
+    parent,
+    root: parent.type === 'ROOT' ? parent : parent.root,
+    ...data,
+  } as any;
+}
+
+export function createRootTreeElement(
+  data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root'> & TreeElementData['ROOT']
+): TreeElement<'ROOT'> {
+  return {
+    type: 'ROOT',
+    id: nextId(),
+    state: 'created',
+    root: null,
+    parent: null,
+    ...data,
+  } as any;
+}
+
+/**
+ * Array have the same structure if
+ *  - they have the same length
+ *  - the keys have not moved
+ */
+export function sameArrayStructure(prev: Array<TreeElement>, children: Array<any>): boolean {
+  if (prev.length !== children.length) {
+    return false;
+  }
+  const prevKeys = prev.map(item => (item.type === 'CHILD' ? item.element.key : undefined));
+  const childrenKeys = prev.map(item => (isValidElement(item) ? item.key : undefined));
+  return arrayShallowEqual(prevKeys, childrenKeys);
+}
+
+export function sameMapStructure(prev: Map<any, TreeElement>, children: Map<any, any>): boolean {
+  if (prev.size !== children.size) {
+    return false;
+  }
+  let allIn = true;
+  prev.forEach((_v, k) => {
+    if (allIn === true && children.has(k) === false) {
+      allIn = false;
+    }
+  });
+  return allIn;
+}
+
+export function findProvider(
+  tree: TreeElement,
+  context: Context<any>
+): TreeElement<'PROVIDER'> | null {
+  let current: TreeElement | null = tree;
+  while (true) {
+    if (current === null) {
+      break;
+    }
+    if (current.type === 'PROVIDER' && current.element.type.context === context) {
+      break;
+    }
+    current = current.parent;
+  }
+  return current;
+}
+
+export function registerContextSub(instance: TreeElement<'CHILD'>, context: Context<any>) {
+  const root = instance.root!;
+  if (!root.context.has(context)) {
+    root.context.set(context, new Set());
+  }
+  root.context.get(context)!.add(instance);
+}
+
+export function unregisterContextSub(instance: TreeElement<'CHILD'>, context: Context<any>) {
+  const root = instance.root!;
+  if (!root.context.has(context)) {
+    return;
+  }
+  const ctx = root.context.get(context)!;
+  ctx.delete(instance);
+  if (ctx.size === 0) {
+    root.context.delete(context);
+  }
+}
+
+export function markContextSubDirty(instance: TreeElement, context: Context<any>) {
+  const root = instance.root!;
+  const ctx = root.context.get(context);
+  if (ctx) {
+    ctx.forEach(c => {
+      if (isDescendantOf(c, instance)) {
+        markDirty(c, instance);
+      }
+    });
+  }
+}
+
+export function isDescendantOf(instance: TreeElement, parent: TreeElement) {
+  let current: TreeElement | null = instance;
+  while (current !== null && current !== parent) {
+    current = current.parent;
+  }
+  return current === parent;
 }

@@ -1,18 +1,22 @@
 import { Subscription } from 'suub';
 import { ChildrenUtils } from './ChildrenUtils';
-import { getInternalState } from './Global';
 import {
-  createInstance,
+  getInternalState,
+  getCurrentHook,
+  getCurrentChildInstance,
+  setCurrentHook,
+} from './Global';
+import {
   depsChanged,
   markDirty,
   globalSetTimeout,
   globalClearTimeout,
+  createRootTreeElement,
+  findProvider,
 } from './utils';
 import {
-  Instance,
   Store,
   OnIdleExec,
-  HooksData,
   Children,
   ResolveType,
   Dispatch,
@@ -28,10 +32,11 @@ import {
   RefHookData,
   EffectType,
   Context,
+  ContextHookData,
+  DemocratRootElement,
+  TreeElement,
 } from './types';
-import { DEMOCRAT_CONTEXT } from './symbols';
-import { TreeElement } from './TreeElement';
-import { ContextStack } from './ContextStack';
+import { DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 
 export { isValidElement, createElement, createContext } from './utils';
 
@@ -62,16 +67,25 @@ export function supportReactHooks(React: any) {
   });
 }
 
-export function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
+export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
   const sub = Subscription.create();
   let state: T;
-  let rootElementTree: null | TreeElement = null;
   let destroyed: boolean = false;
   let execQueue: null | Array<OnIdleExec> = null;
 
-  const rootInstance = createInstance({
+  const rootElem: DemocratRootElement = {
+    [DEMOCRAT_ELEMENT]: true,
+    [DEMOCRAT_ROOT]: true,
+    children: rootChildren,
+  };
+
+  let rootInstance: TreeElement<'ROOT'> = createRootTreeElement({
     onIdle,
-    parent: null,
+    value: null,
+    previous: null,
+    mounted: false,
+    children: null as any,
+    context: new Map(),
   });
 
   execute();
@@ -116,7 +130,7 @@ export function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
 
   function scheduleEffects(effectsSync: boolean): number {
     return globalSetTimeout(() => {
-      ChildrenUtils.executeEffect(rootElementTree!, rootInstance);
+      ChildrenUtils.effects(rootInstance);
       const shouldRender = flushExecQueue();
       if (shouldRender) {
         execute(effectsSync);
@@ -135,28 +149,22 @@ export function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
     if (scheduleEffectsBeforeRender) {
       effectTimer = scheduleEffects(effectsSync);
     }
-    if (rootElementTree === null) {
-      rootElementTree = ChildrenUtils.mountChildren(rootElement, rootInstance, null);
-      state = rootElementTree.value;
+    if (rootInstance.mounted === false) {
+      rootInstance = ChildrenUtils.mount(rootElem, rootInstance) as any;
     } else {
-      rootElementTree = ChildrenUtils.updateChildren(
-        rootElementTree,
-        rootElement,
-        rootInstance,
-        null
-      );
-      state = rootElementTree.value;
+      rootInstance = ChildrenUtils.update(rootInstance, rootElem, null) as any;
     }
+    state = rootInstance.value;
     if (!scheduleEffectsBeforeRender) {
       effectTimer = scheduleEffects(effectsSync);
     }
-    ChildrenUtils.executeLayoutEffect(rootElementTree!, rootInstance);
+    ChildrenUtils.layoutEffects(rootInstance);
     const shouldRunEffectsSync = flushExecQueue();
     if (shouldRunEffectsSync || effectsSync) {
       if (effectTimer) {
         globalClearTimeout(effectTimer);
       }
-      ChildrenUtils.executeEffect(rootElementTree!, rootInstance);
+      ChildrenUtils.effects(rootInstance);
       const effectRequestRender = flushExecQueue();
       if (shouldRunEffectsSync) {
         execute(effectsSync, true);
@@ -172,37 +180,16 @@ export function render<P, T>(rootElement: DemocratElement<P, T>): Store<T> {
     if (destroyed) {
       throw new Error('Store already destroyed');
     }
-    ChildrenUtils.unmountChildren(rootElementTree!, rootInstance);
+    ChildrenUtils.unmount(rootInstance);
     destroyed = true;
   }
 }
 
-function getCurrentInstance(): Instance {
-  const state = getInternalState().rendering;
-  if (state === null) {
-    throw new Error(`Hooks used outside of render !`);
-  }
-  return state;
-}
-
-function getCurrentHook(): HooksData | null {
-  const instance = getCurrentInstance();
-  if (instance.hooks && instance.hooks.length > 0) {
-    return instance.hooks[instance.nextHooks.length] || null;
-  }
-  return null;
-}
-
-function setCurrentHook(hook: HooksData) {
-  const instance = getCurrentInstance();
-  instance.nextHooks.push(hook);
-}
-
 export function useChildren<C extends Children>(children: C): ResolveType<C> {
   const hook = getCurrentHook();
-  const parent = getCurrentInstance();
+  const parent = getCurrentChildInstance();
   if (hook === null) {
-    const childrenTree = ChildrenUtils.mountChildren(children, parent, null);
+    const childrenTree = ChildrenUtils.mount(children, parent);
     setCurrentHook({
       type: 'CHILDREN',
       tree: childrenTree,
@@ -212,18 +199,18 @@ export function useChildren<C extends Children>(children: C): ResolveType<C> {
   if (hook.type !== 'CHILDREN') {
     throw new Error('Invalid Hook type');
   }
-  hook.tree = ChildrenUtils.updateChildren(hook.tree, children, parent, null);
+  hook.tree = ChildrenUtils.update(hook.tree, children, hook.tree.parent);
   setCurrentHook(hook);
   return hook.tree.value;
 }
 
 export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>] {
   const hook = getCurrentHook();
-  const instance = getCurrentInstance();
+  const instance = getCurrentChildInstance();
   if (hook === null) {
     const value = typeof initialState === 'function' ? (initialState as any)() : initialState;
     const setValue: Dispatch<SetStateAction<S>> = value => {
-      instance.onIdle(render => {
+      instance.root.onIdle(render => {
         const nextValue = typeof value === 'function' ? (value as any)(stateHook.value) : value;
         if (nextValue !== stateHook.value) {
           stateHook.value = nextValue;
@@ -330,27 +317,55 @@ export function useRef<T>(initialValue?: T): MutableRefObject<T> {
   return hook.ref;
 }
 
+export function useContextInternal<C extends Context<any>>(
+  context: C
+): { found: C[typeof DEMOCRAT_CONTEXT]['defaultValue']; value: any } {
+  const instance = getCurrentChildInstance();
+  const hook = getCurrentHook();
+  if (hook !== null) {
+    if (hook.type !== 'CONTEXT') {
+      throw new Error('Invalid Hook type');
+    }
+  }
+  // TODO: move provider and value resolution to the instance level
+  const provider = findProvider(instance, context);
+  const value = provider
+    ? provider.element.props.value
+    : context[DEMOCRAT_CONTEXT].hasDefault
+    ? context[DEMOCRAT_CONTEXT].defaultValue
+    : undefined;
+  const contextHook: ContextHookData = {
+    type: 'CONTEXT',
+    context,
+    provider,
+    value,
+  };
+  setCurrentHook(contextHook);
+  return {
+    found: provider !== null,
+    value,
+  };
+}
+
 export function useContext<C extends Context<any>>(
   context: C
 ): C[typeof DEMOCRAT_CONTEXT]['hasDefault'] extends false
   ? C[typeof DEMOCRAT_CONTEXT]['defaultValue'] | undefined
   : C[typeof DEMOCRAT_CONTEXT]['defaultValue'] {
-  const instance = getCurrentInstance();
-  setCurrentHook({} as any);
-  const read = ContextStack.read(instance.context, context);
-  if (read.found) {
-    return read.value;
-  }
-  return undefined as any;
+  return useContextInternal(context).value;
 }
 
 /**
  * Same as useContext except if there are no provider and no default value it throw an error
  */
 export function useContextOrThrow<C extends Context<any>>(
-  _context: C
+  context: C
 ): C[typeof DEMOCRAT_CONTEXT]['defaultValue'] {
-  throw new Error(`Implement this !`);
+  const { found, value } = useContextInternal(context);
+  if (found === false && context[DEMOCRAT_CONTEXT].hasDefault === false) {
+    throw new Error('Missing Provider');
+  }
+  return value;
 }
 
 // useImperativeHandle<T, R extends T>(ref: Ref<T>|undefined, init: () => R, deps?: DependencyList): void;

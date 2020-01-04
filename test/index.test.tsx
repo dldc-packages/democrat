@@ -3,7 +3,6 @@ import * as Democrat from '../src';
 test('basic count state', () => {
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
-
     return {
       count,
       setCount,
@@ -18,7 +17,6 @@ test('basic count state', () => {
 test('multiple counters (array children)', () => {
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
-
     return {
       count,
       setCount,
@@ -127,4 +125,44 @@ test('render a context', () => {
     })
   );
   expect(store.getState().count).toEqual(42);
+  store.getState().setCount(1);
+  expect(store.getState().count).toEqual(43);
+});
+
+test('render a context and update it', () => {
+  const NumCtx = Democrat.createContext<number>(10);
+
+  const Child = () => {
+    const num = Democrat.useContext(NumCtx);
+    const [count, setCount] = Democrat.useState(0);
+
+    return {
+      count: count + num,
+      setCount,
+    };
+  };
+
+  const Parent = () => {
+    const [num, setNum] = Democrat.useState(0);
+
+    const { count, setCount } = Democrat.useChildren(
+      Democrat.createElement(NumCtx.Provider, {
+        value: num,
+        children: Democrat.createElement(Child),
+      })
+    );
+
+    return {
+      count,
+      setCount,
+      setNum,
+    };
+  };
+
+  const store = Democrat.render(Democrat.createElement(Parent));
+  expect(store.getState().count).toEqual(0);
+  store.getState().setCount(1);
+  expect(store.getState().count).toEqual(1);
+  store.getState().setNum(1);
+  expect(store.getState().count).toEqual(2);
 });

@@ -1,6 +1,4 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_INSTANCE, DEMOCRAT_CONTEXT } from './symbols';
-import { TreeElement } from './TreeElement';
-import { ContextStack } from './ContextStack';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols';
 
 export type Dispatch<A> = (value: A) => void;
 export type SetStateAction<S> = S | ((prevState: S) => S);
@@ -66,6 +64,12 @@ export interface DemocratElementConsumer<P, T> {
   type: DemocratContextConsumer<P>;
   props: ContextConsumerProps<P, T>;
   key: Key;
+}
+
+export interface DemocratRootElement {
+  [DEMOCRAT_ELEMENT]: true;
+  [DEMOCRAT_ROOT]: true;
+  children: Children;
 }
 
 /**
@@ -140,34 +144,28 @@ export type MemoHookData = {
   deps: DependencyList | undefined;
 };
 
+export type ContextHookData = {
+  type: 'CONTEXT';
+  context: Context<any>;
+  provider: TreeElement<'PROVIDER'> | null;
+  value: any;
+};
+
 export type HooksData =
   | StateHookData
   | ChildrenHookData
   | EffectHookData
   | MemoHookData
   | LayoutEffectHookData
-  | RefHookData;
+  | RefHookData
+  | ContextHookData;
 
 export type OnIdleExec = (render: () => void) => void;
 export type OnIdle = (exec: OnIdleExec) => void;
 
-export interface Instance {
-  [DEMOCRAT_INSTANCE]: true;
-  id: number;
-  parent: null | Instance;
-  hooks: Array<HooksData> | null;
-  nextHooks: Array<HooksData>;
-  onIdle: OnIdle;
-  context: ContextStack | null;
-  key: Key;
-  // is set to true when the component or one of it's children has a new state
-  // and thus need to be rendered even if props are equal
-  dirty: boolean;
-}
-
 export type InternalState = {
-  rendering: null | Instance;
-  effects: null | Instance;
+  rendering: null | TreeElement;
+  effects: null | TreeElement;
   reactHooksSupported: boolean;
 };
 
@@ -176,3 +174,58 @@ export type Props<P> = P & { key?: string | number };
 export type Component<P, S> = (props: Props<P>) => S;
 
 export type AllOptional<P = {}> = {} extends P ? true : P extends Required<P> ? false : true;
+
+export type TreeElementState = 'created' | 'stable' | 'updated' | 'removed';
+
+export type TreeElementCommon = {
+  id: number;
+  parent: TreeElement;
+  previous: TreeElement | null;
+  value: any;
+  state: TreeElementState;
+  root: TreeElement<'ROOT'>;
+};
+
+export type TreeElementData = {
+  ROOT: {
+    onIdle: OnIdle;
+    mounted: boolean;
+    children: TreeElement;
+    context: Map<Context<any>, Set<TreeElement<'CHILD'>>>;
+  };
+  NULL: {};
+  PROVIDER: {
+    element: DemocratElementProvider<any, any>;
+    children: TreeElement;
+  };
+  CONSUMER: {
+    element: DemocratElementConsumer<any, any>;
+  };
+  CHILD: {
+    element: DemocratElementComponent<any, any>;
+    hooks: Array<HooksData> | null;
+    nextHooks: Array<HooksData>;
+    key: Key;
+    // is set to true when the component or one of it's children has a new state
+    // and thus need to be rendered even if props are equal
+    dirty: boolean;
+  };
+  OBJECT: { children: { [key: string]: TreeElement } };
+  ARRAY: { children: Array<TreeElement> };
+  MAP: {
+    children: Map<any, TreeElement>;
+  };
+  SET: {
+    children: Set<TreeElement>;
+  };
+};
+
+type TreeElementResolved = {
+  [K in keyof TreeElementData]: TreeElementCommon & {
+    type: K;
+  } & TreeElementData[K];
+};
+
+export type TreeElementType = keyof TreeElementResolved;
+
+export type TreeElement<K extends TreeElementType = TreeElementType> = TreeElementResolved[K];
