@@ -485,12 +485,13 @@ const CHILDREN_LIFECYCLES: {
     },
   },
   CONSUMER: {
-    mount: (element, parent) => {
-      return createTreeElement('CONSUMER', parent, {
-        value: null,
-        previous: null,
-        element: element,
-      });
+    mount: (_element, _parent) => {
+      throw new Error('Consumer is not supported yet, use useContext or useContextOrThrow instead');
+      // return createTreeElement('CONSUMER', parent, {
+      //   value: null,
+      //   previous: null,
+      //   element: element,
+      // });
     },
     update: tree => {
       return tree;
@@ -500,7 +501,7 @@ const CHILDREN_LIFECYCLES: {
       // effectInternal(tree.)
     },
     cleanup: () => {
-      throw new Error('Not implemented yet');
+      // throw new Error('Not implemented yet');
     },
   },
   PROVIDER: {
