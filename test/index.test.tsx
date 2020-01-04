@@ -1,6 +1,7 @@
 import * as Democrat from '../src';
 
 test('basic count state', () => {
+  expect.assertions(2);
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
     return {
@@ -10,8 +11,47 @@ test('basic count state', () => {
   };
   const store = Democrat.render(Democrat.createElement(Counter));
   expect(store.getState().count).toEqual(0);
+  store.subscribe(() => {
+    expect(store.getState().count).toEqual(42);
+  });
   store.getState().setCount(42);
-  expect(store.getState().count).toEqual(42);
+});
+
+test('use effect runs', done => {
+  const Counter = () => {
+    const [count, setCount] = Democrat.useState(0);
+
+    Democrat.useEffect(() => {
+      done();
+    }, [count]);
+
+    return {
+      count,
+      setCount,
+    };
+  };
+  Democrat.render(Democrat.createElement(Counter));
+});
+
+test('use effect when render', done => {
+  const Counter = () => {
+    const [count, setCount] = Democrat.useState(0);
+
+    Democrat.useEffect(() => {
+      if (count === 0) {
+        setCount(42);
+      } else {
+        done();
+      }
+    }, [count]);
+
+    return {
+      count,
+      setCount,
+    };
+  };
+
+  Democrat.render(Democrat.createElement(Counter));
 });
 
 test('multiple counters (array children)', () => {

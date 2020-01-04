@@ -111,6 +111,7 @@ const CHILDREN_LIFECYCLES: {
       });
       tree.value = children.value;
       tree.children = children;
+      tree.state = 'updated';
       return tree;
     },
     effect: (tree, type) => {
@@ -597,7 +598,6 @@ function update(tree: TreeElement, element: any, parent: TreeElement | null): Tr
   })();
 
   if (shouldUnmoutRemount) {
-    console.log('shouldUnmoutRemount');
     // we mount the mew children and flag the old one as removed
     const nextTree = mount(element, parent!);
     tree.state = 'removed';
