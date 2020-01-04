@@ -206,3 +206,55 @@ test('render a context and update it', () => {
   store.getState().setNum(1);
   expect(store.getState().count).toEqual(2);
 });
+
+test('conditionnaly use a children', () => {
+  const Child = () => {
+    return 42;
+  };
+
+  const Store = () => {
+    const [show, setShow] = Democrat.useState(false);
+
+    const child = Democrat.useChildren(show ? Democrat.createElement(Child) : null);
+
+    return Democrat.useMemo(
+      () => ({
+        setShow,
+        child,
+      }),
+      [setShow, child]
+    );
+  };
+  const store = Democrat.render(Democrat.createElement(Store));
+  expect(store.getState().child).toEqual(null);
+  store.getState().setShow(true);
+  expect(store.getState().child).toEqual(42);
+});
+
+test('array of children', () => {
+  const Child = ({ val }: { val: number }) => {
+    return val * 2;
+  };
+
+  const Store = () => {
+    const [items, setItems] = Democrat.useState([23, 5, 7]);
+
+    const addItem = Democrat.useCallback((item: number) => {
+      setItems(prev => [...prev, item]);
+    }, []);
+
+    const child = Democrat.useChildren(items.map(v => Democrat.createElement(Child, { val: v })));
+
+    return Democrat.useMemo(
+      () => ({
+        addItem,
+        child,
+      }),
+      [addItem, child]
+    );
+  };
+  const store = Democrat.render(Democrat.createElement(Store));
+  expect(store.getState().child).toEqual([46, 10, 14]);
+  store.getState().addItem(6);
+  expect(store.getState().child).toEqual([46, 10, 14, 12]);
+});
