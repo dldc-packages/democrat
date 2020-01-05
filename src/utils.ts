@@ -211,9 +211,10 @@ export function createTreeElement<T extends TreeElementType>(
   parent: TreeElement,
   data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root'> & TreeElementData[T]
 ): TreeElement<T> {
+  const id = nextId();
   return {
     type,
-    id: nextId(),
+    id,
     state: 'created',
     parent,
     root: parent.type === 'ROOT' ? parent : parent.root,
@@ -244,7 +245,7 @@ export function sameArrayStructure(prev: Array<TreeElement>, children: Array<any
     return false;
   }
   const prevKeys = prev.map(item => (item.type === 'CHILD' ? item.element.key : undefined));
-  const childrenKeys = prev.map(item => (isValidElement(item) ? item.key : undefined));
+  const childrenKeys = children.map(item => (isValidElement(item) ? item.key : undefined));
   return arrayShallowEqual(prevKeys, childrenKeys);
 }
 

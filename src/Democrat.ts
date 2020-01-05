@@ -152,6 +152,7 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
     } else {
       rootInstance = ChildrenUtils.update(rootInstance, rootElem, null) as any;
     }
+    // verifyTree();
     state = rootInstance.value;
     const effectTimer = scheduleEffects();
     ChildrenUtils.layoutEffects(rootInstance);
@@ -214,6 +215,9 @@ export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateA
   if (hook === null) {
     const value = typeof initialState === 'function' ? (initialState as any)() : initialState;
     const setValue: Dispatch<SetStateAction<S>> = value => {
+      if (instance.state === 'removed') {
+        throw new Error(`Cannot set state of un unmounted component`);
+      }
       instance.root.onIdle(() => {
         const nextValue = typeof value === 'function' ? (value as any)(stateHook.value) : value;
         if (nextValue !== stateHook.value) {

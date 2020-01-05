@@ -2,8 +2,9 @@ import * as Democrat from '../src';
 import { waitForNextState, waitForNextTick } from './utils';
 
 test('basic count state', async () => {
-  expect.assertions(2);
+  const onRender = jest.fn();
   const Counter = () => {
+    onRender();
     const [count, setCount] = Democrat.useState(0);
     return {
       count,
@@ -12,8 +13,11 @@ test('basic count state', async () => {
   };
   const store = Democrat.render(Democrat.createElement(Counter));
   expect(store.getState().count).toEqual(0);
+  await waitForNextTick();
   store.getState().setCount(42);
-  expect((await waitForNextState(store)).count).toEqual(42);
+  await waitForNextState(store);
+  expect(store.getState().count).toEqual(42);
+  expect(onRender).toHaveBeenCalledTimes(2);
 });
 
 test('set two states', async () => {
@@ -334,4 +338,37 @@ test('array of children with keys', async () => {
   store.getState().addItem(6);
   await waitForNextState(store);
   expect(store.getState().child).toEqual([12, 46, 10, 14]);
+});
+
+test('remove key of array child', async () => {
+  const onRender = jest.fn();
+
+  const Child = () => {
+    return Math.random();
+  };
+
+  const Store = () => {
+    onRender();
+    const [withKey, setWithKey] = Democrat.useState(true);
+
+    const child = Democrat.useChildren([
+      withKey ? Democrat.createElement(Child, { key: 42 }) : Democrat.createElement(Child),
+    ]);
+
+    return Democrat.useMemo(
+      () => ({
+        setWithKey,
+        child,
+      }),
+      [setWithKey, child]
+    );
+  };
+  const store = Democrat.render(Democrat.createElement(Store));
+  const out1 = store.getState().child[0];
+  await waitForNextTick();
+  store.getState().setWithKey(false);
+  await waitForNextState(store);
+  expect(onRender).toHaveBeenCalledTimes(2);
+  const out2 = store.getState().child[0];
+  expect(out2).not.toEqual(out1);
 });

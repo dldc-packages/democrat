@@ -10,8 +10,20 @@ export function getInternalState() {
   return INTERNAL_STATE;
 }
 
+// function logTree(name: string, tree: TreeElement | null) {
+//   if (tree === null) {
+//     console.log(`${name}: null`);
+//     return;
+//   }
+//   const str = `${name}: ${tree.id}(${tree.type})`;
+//   console.log(str);
+// }
+
 export function withGlobalRenderingInstance<T>(current: TreeElement, exec: () => T): T {
   if (getInternalState().rendering !== current.parent) {
+    // logTree('current', current);
+    // logTree('parent', current.parent);
+    // logTree('invalid', getInternalState().rendering);
     throw new Error('Invalid parent !');
   }
   getInternalState().rendering = current;
