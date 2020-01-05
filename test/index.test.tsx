@@ -28,8 +28,6 @@ test('set two states', async () => {
       setCountB(v);
     }, []);
 
-    console.log({ countA, countB });
-
     return {
       count: countA + countB,
       setCount,
