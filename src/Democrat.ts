@@ -72,6 +72,8 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
   let state: T;
   let destroyed: boolean = false;
   let execQueue: null | Array<OnIdleExec> = null;
+  let renderRequested = false;
+  let flushScheduled = false;
 
   const rootElem: DemocratRootElement = {
     [DEMOCRAT_ELEMENT]: true,
@@ -81,6 +83,7 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
 
   let rootInstance: TreeElement<'ROOT'> = createRootTreeElement({
     onIdle,
+    requestRender,
     value: null,
     previous: null,
     mounted: false,
@@ -88,7 +91,7 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
     context: new Map(),
   });
 
-  execute();
+  doRender();
 
   return {
     getState: () => state,
@@ -103,51 +106,46 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
     if (getInternalState().rendering !== null) {
       throw new Error(`Cannot setState during render !`);
     }
-    if (getInternalState().effects === null) {
-      // exec and pass execute as the render fn
-      exec(() => execute());
-      return;
-    }
     if (execQueue === null) {
       execQueue = [exec];
     } else {
       execQueue.push(exec);
     }
+    scheduleFlush();
+  }
+
+  function scheduleFlush(): void {
+    if (flushScheduled) {
+      return;
+    }
+    flushScheduled = true;
+    globalSetTimeout(() => {
+      flushScheduled = false;
+      const shouldRender = flushExecQueue();
+      if (shouldRender) {
+        doRender();
+      }
+    }, 0);
+  }
+
+  function requestRender(): void {
+    renderRequested = true;
   }
 
   function flushExecQueue(): boolean {
-    let renderRequested = false;
+    renderRequested = false;
     if (execQueue) {
       execQueue.forEach(exec => {
-        exec(() => {
-          renderRequested = true;
-        });
+        exec();
       });
       execQueue = null;
     }
     return renderRequested;
   }
 
-  function scheduleEffects(effectsSync: boolean): number {
-    return globalSetTimeout(() => {
-      ChildrenUtils.effects(rootInstance);
-      const shouldRender = flushExecQueue();
-      if (shouldRender) {
-        execute(effectsSync);
-      }
-    }, 0);
-  }
-
-  function execute(
-    effectsSync: boolean = false,
-    scheduleEffectsBeforeRender: boolean = false
-  ): void {
+  function doRender(effectsSync: boolean = false): void {
     if (destroyed) {
       throw new Error('Store destroyed');
-    }
-    let effectTimer: number | null = null;
-    if (scheduleEffectsBeforeRender) {
-      effectTimer = scheduleEffects(effectsSync);
     }
     if (rootInstance.mounted === false) {
       rootInstance = ChildrenUtils.mount(rootElem, rootInstance) as any;
@@ -155,25 +153,31 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
       rootInstance = ChildrenUtils.update(rootInstance, rootElem, null) as any;
     }
     state = rootInstance.value;
-    if (!scheduleEffectsBeforeRender) {
-      effectTimer = scheduleEffects(effectsSync);
-    }
+    const effectTimer = scheduleEffects();
     ChildrenUtils.layoutEffects(rootInstance);
-    const shouldRunEffectsSync = flushExecQueue();
-    if (shouldRunEffectsSync || effectsSync) {
+    const layoutEffectsRequestRender = flushExecQueue();
+    if (layoutEffectsRequestRender || effectsSync) {
       if (effectTimer) {
         globalClearTimeout(effectTimer);
       }
       ChildrenUtils.effects(rootInstance);
-      const effectRequestRender = flushExecQueue();
-      if (shouldRunEffectsSync) {
-        execute(effectsSync, true);
-      } else if (effectsSync && effectRequestRender) {
-        execute(true, true);
+      const effectsRequestRender = flushExecQueue();
+      if (layoutEffectsRequestRender || effectsRequestRender) {
+        doRender(true);
       }
     } else {
       sub.call();
     }
+  }
+
+  function scheduleEffects(): number {
+    return globalSetTimeout(() => {
+      ChildrenUtils.effects(rootInstance);
+      const shouldRender = flushExecQueue();
+      if (shouldRender) {
+        doRender();
+      }
+    }, 0);
   }
 
   function destroy() {
@@ -210,12 +214,12 @@ export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateA
   if (hook === null) {
     const value = typeof initialState === 'function' ? (initialState as any)() : initialState;
     const setValue: Dispatch<SetStateAction<S>> = value => {
-      instance.root.onIdle(render => {
+      instance.root.onIdle(() => {
         const nextValue = typeof value === 'function' ? (value as any)(stateHook.value) : value;
         if (nextValue !== stateHook.value) {
           stateHook.value = nextValue;
           markDirty(instance);
-          render();
+          instance.root.requestRender();
         }
       });
     };

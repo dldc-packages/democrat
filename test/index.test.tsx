@@ -1,6 +1,7 @@
 import * as Democrat from '../src';
+import { waitForNextState, waitForNextTick } from './utils';
 
-test('basic count state', () => {
+test('basic count state', async () => {
   expect.assertions(2);
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
@@ -11,18 +12,50 @@ test('basic count state', () => {
   };
   const store = Democrat.render(Democrat.createElement(Counter));
   expect(store.getState().count).toEqual(0);
-  store.subscribe(() => {
-    expect(store.getState().count).toEqual(42);
-  });
   store.getState().setCount(42);
+  expect((await waitForNextState(store)).count).toEqual(42);
 });
 
-test('use effect runs', done => {
+test('set two states', async () => {
+  expect.assertions(3);
+  const render = jest.fn();
+  const Counter = () => {
+    render();
+    const [countA, setCountA] = Democrat.useState(0);
+    const [countB, setCountB] = Democrat.useState(0);
+    const setCount = Democrat.useCallback((v: number) => {
+      setCountA(v);
+      setCountB(v);
+    }, []);
+
+    console.log({ countA, countB });
+
+    return {
+      count: countA + countB,
+      setCount,
+    };
+  };
+  const store = Democrat.render(Democrat.createElement(Counter));
+  expect(store.getState().count).toEqual(0);
+  store.getState().setCount(1);
+  await waitForNextState(store);
+  expect(render).toHaveBeenCalledTimes(2);
+  expect(store.getState().count).toEqual(2);
+});
+
+test('effects runs', async () => {
+  const onLayoutEffect = jest.fn();
+  const onEffect = jest.fn();
+
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
 
+    Democrat.useLayoutEffect(() => {
+      onLayoutEffect();
+    }, [count]);
+
     Democrat.useEffect(() => {
-      done();
+      onEffect();
     }, [count]);
 
     return {
@@ -31,17 +64,20 @@ test('use effect runs', done => {
     };
   };
   Democrat.render(Democrat.createElement(Counter));
+  await waitForNextTick();
+  expect(onLayoutEffect).toHaveBeenCalled();
+  expect(onEffect).toHaveBeenCalled();
 });
 
-test('use effect when render', done => {
+test('use effect when re-render', async () => {
+  const onUseEffect = jest.fn();
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
 
     Democrat.useEffect(() => {
+      onUseEffect();
       if (count === 0) {
         setCount(42);
-      } else {
-        done();
       }
     }, [count]);
 
@@ -51,10 +87,15 @@ test('use effect when render', done => {
     };
   };
 
-  Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.render(Democrat.createElement(Counter));
+  await waitForNextState(store);
+  expect(onUseEffect).toHaveBeenCalledTimes(1);
+  expect(store.getState().count).toBe(42);
+  await waitForNextTick();
+  expect(onUseEffect).toHaveBeenCalledTimes(2);
 });
 
-test('multiple counters (array children)', () => {
+test('multiple counters (array children)', async () => {
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
     return {
@@ -102,8 +143,10 @@ test('multiple counters (array children)', () => {
   expect(store.getState().counters.length).toBe(3);
   expect(store.getState().counters[0].count).toBe(0);
   store.getState().counters[0].setCount(1);
+  await waitForNextState(store);
   expect(store.getState().counters[0].count).toBe(1);
   store.getState().addCounter();
+  await waitForNextState(store);
   expect(store.getState().counters.length).toEqual(4);
   expect(store.getState().counters[3].count).toBe(0);
 });
@@ -146,7 +189,7 @@ test('multiple counters (object children)', () => {
   `);
 });
 
-test('render a context', () => {
+test('render a context', async () => {
   const NumCtx = Democrat.createContext<number>(10);
 
   const Store = () => {
@@ -166,10 +209,11 @@ test('render a context', () => {
   );
   expect(store.getState().count).toEqual(42);
   store.getState().setCount(1);
+  await waitForNextState(store);
   expect(store.getState().count).toEqual(43);
 });
 
-test('render a context and update it', () => {
+test('render a context and update it', async () => {
   const NumCtx = Democrat.createContext<number>(10);
 
   const Child = () => {
@@ -202,12 +246,14 @@ test('render a context and update it', () => {
   const store = Democrat.render(Democrat.createElement(Parent));
   expect(store.getState().count).toEqual(0);
   store.getState().setCount(1);
+  await waitForNextState(store);
   expect(store.getState().count).toEqual(1);
   store.getState().setNum(1);
+  await waitForNextState(store);
   expect(store.getState().count).toEqual(2);
 });
 
-test('conditionnaly use a children', () => {
+test('conditionnaly use a children', async () => {
   const Child = () => {
     return 42;
   };
@@ -228,10 +274,11 @@ test('conditionnaly use a children', () => {
   const store = Democrat.render(Democrat.createElement(Store));
   expect(store.getState().child).toEqual(null);
   store.getState().setShow(true);
+  await waitForNextState(store);
   expect(store.getState().child).toEqual(42);
 });
 
-test('array of children', () => {
+test('array of children', async () => {
   const Child = ({ val }: { val: number }) => {
     return val * 2;
   };
@@ -256,5 +303,37 @@ test('array of children', () => {
   const store = Democrat.render(Democrat.createElement(Store));
   expect(store.getState().child).toEqual([46, 10, 14]);
   store.getState().addItem(6);
+  await waitForNextState(store);
   expect(store.getState().child).toEqual([46, 10, 14, 12]);
+});
+
+test('array of children with keys', async () => {
+  const Child = ({ val }: { val: number }) => {
+    return val * 2;
+  };
+
+  const Store = () => {
+    const [items, setItems] = Democrat.useState([23, 5, 7]);
+
+    const addItem = Democrat.useCallback((item: number) => {
+      setItems(prev => [item, ...prev]);
+    }, []);
+
+    const child = Democrat.useChildren(
+      items.map(v => Democrat.createElement(Child, { key: v, val: v }))
+    );
+
+    return Democrat.useMemo(
+      () => ({
+        addItem,
+        child,
+      }),
+      [addItem, child]
+    );
+  };
+  const store = Democrat.render(Democrat.createElement(Store));
+  expect(store.getState().child).toEqual([46, 10, 14]);
+  store.getState().addItem(6);
+  await waitForNextState(store);
+  expect(store.getState().child).toEqual([12, 46, 10, 14]);
 });

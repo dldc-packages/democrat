@@ -145,7 +145,6 @@ const CHILDREN_LIFECYCLES: {
         element: element,
         value: null,
         previous: null,
-        key: element.key,
         dirty: false,
         hooks: null,
         nextHooks: [],
@@ -243,7 +242,9 @@ const CHILDREN_LIFECYCLES: {
         previous: tree,
       });
       const prevKeys = tree.children.map(item =>
-        item.type === 'CHILD' ? item.element.key : undefined
+        item.type === 'CHILD' || item.type === 'PROVIDER' || item.type === 'CONSUMER'
+          ? item.element.key
+          : undefined
       );
       nextTree.children = withGlobalRenderingInstance(nextTree, () => {
         return element.map((item, index) => {
@@ -571,7 +572,7 @@ function mount(element: any, parent: TreeElement): TreeElement {
  */
 function update(tree: TreeElement, element: any, parent: TreeElement | null): TreeElement {
   if (tree.type !== 'ROOT' && parent === null) {
-    throw new Error('Oop');
+    throw new Error('Oops');
   }
 
   const nextType = getChildrenType(element);

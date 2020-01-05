@@ -160,7 +160,7 @@ export type HooksData =
   | RefHookData
   | ContextHookData;
 
-export type OnIdleExec = (render: () => void) => void;
+export type OnIdleExec = () => void;
 export type OnIdle = (exec: OnIdleExec) => void;
 
 export type InternalState = {
@@ -189,6 +189,7 @@ export type TreeElementCommon = {
 export type TreeElementData = {
   ROOT: {
     onIdle: OnIdle;
+    requestRender: () => void;
     mounted: boolean;
     children: TreeElement;
     context: Map<Context<any>, Set<TreeElement<'CHILD'>>>;
@@ -205,7 +206,6 @@ export type TreeElementData = {
     element: DemocratElementComponent<any, any>;
     hooks: Array<HooksData> | null;
     nextHooks: Array<HooksData>;
-    key: Key;
     // is set to true when the component or one of it's children has a new state
     // and thus need to be rendered even if props are equal
     dirty: boolean;
