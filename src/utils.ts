@@ -30,6 +30,10 @@ export function isRootElement(maybe: any): maybe is DemocratRootElement {
 }
 
 export function createElement<P, T>(
+  component: Component<P, T>,
+  props: Props<P>
+): DemocratElement<P, T>;
+export function createElement<P, T>(
   context: DemocratContextConsumer<P>,
   props: ContextConsumerProps<P, T>
 ): DemocratElement<P, ResolveType<T>>;
@@ -37,10 +41,6 @@ export function createElement<P, T>(
   context: DemocratContextProvider<P>,
   props: ContextProviderProps<P, T>
 ): DemocratElement<P, ResolveType<T>>;
-export function createElement<P, T>(
-  component: Component<P, T>,
-  props: Props<P>
-): DemocratElement<P, T>;
 export function createElement<P, T>(
   component: Component<P, T>,
   props?: Props<P>
