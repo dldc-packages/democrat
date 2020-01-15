@@ -18,10 +18,5 @@
     "@types/react-dom": "^16.8.4",
     "parcel": "^1.12.3",
     "typescript": "^3.4.5"
-  },
-  "alias": {
-    "react": "../node_modules/react",
-    "react-dom": "../node_modules/react-dom/profiling",
-    "scheduler/tracing": "../node_modules/scheduler/tracing-profiling"
   }
 }

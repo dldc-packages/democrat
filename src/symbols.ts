@@ -1,2 +1,3 @@
 export const DEMOCRAT_ELEMENT = Symbol('DEMOCRAT_ELEMENT');
-export const DEMOCRAT_INSTANCE = Symbol('DEMOCRAT_INSTANCE');
+export const DEMOCRAT_CONTEXT = Symbol('DEMOCRAT_CONTEXT');
+export const DEMOCRAT_ROOT = Symbol('DEMOCRAT_CONTEXT');

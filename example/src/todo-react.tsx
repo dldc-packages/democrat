@@ -1,4 +1,4 @@
-import Democrat, { Component as DemocratComponent } from '../../src';
+import * as Democrat from '../../src';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
@@ -16,7 +16,7 @@ interface State {
   toggleTodo: (todoId: number) => void;
 }
 
-const TodosStore: DemocratComponent<{}, State> = () => {
+const TodosStore: Democrat.Component<{}, State> = () => {
   const [todos, setTodos] = Democrat.useState<Array<Todo>>([]);
 
   const addTodo = Democrat.useCallback((title: string) => {
