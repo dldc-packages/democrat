@@ -99,6 +99,37 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
     destroy,
   };
 
+  function doRender(): void {
+    if (destroyed) {
+      throw new Error('Store destroyed');
+    }
+    if (rootInstance.mounted === false) {
+      rootInstance = ChildrenUtils.mount(rootElem, rootInstance) as any;
+    } else {
+      rootInstance = ChildrenUtils.update(rootInstance, rootElem, null) as any;
+    }
+    state = rootInstance.value;
+    // Schedule setTimeout(() => runEffect)
+    const effectTimer = scheduleEffects();
+    // run layoutEffects
+    ChildrenUtils.layoutEffects(rootInstance);
+    // Apply all `setState`
+    const layoutEffectsRequestRender = flushExecQueue();
+    if (layoutEffectsRequestRender) {
+      // cancel the setTimeout
+      globalClearTimeout(effectTimer);
+      // run effect synchronously
+      ChildrenUtils.effects(rootInstance);
+      // apply setState
+      flushExecQueue();
+      doRender();
+    } else {
+      // not setState in Layout effect
+      sub.call();
+      return;
+    }
+  }
+
   function onIdle(exec: OnIdleExec) {
     if (destroyed) {
       throw new Error('Store destroyed');
@@ -141,34 +172,6 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
       execQueue = null;
     }
     return renderRequested;
-  }
-
-  function doRender(effectsSync: boolean = false): void {
-    if (destroyed) {
-      throw new Error('Store destroyed');
-    }
-    if (rootInstance.mounted === false) {
-      rootInstance = ChildrenUtils.mount(rootElem, rootInstance) as any;
-    } else {
-      rootInstance = ChildrenUtils.update(rootInstance, rootElem, null) as any;
-    }
-    // verifyTree();
-    state = rootInstance.value;
-    const effectTimer = scheduleEffects();
-    ChildrenUtils.layoutEffects(rootInstance);
-    const layoutEffectsRequestRender = flushExecQueue();
-    if (layoutEffectsRequestRender || effectsSync) {
-      if (effectTimer) {
-        globalClearTimeout(effectTimer);
-      }
-      ChildrenUtils.effects(rootInstance);
-      const effectsRequestRender = flushExecQueue();
-      if (layoutEffectsRequestRender || effectsRequestRender) {
-        doRender(true);
-      }
-    } else {
-      sub.call();
-    }
   }
 
   function scheduleEffects(): number {
