@@ -20,6 +20,53 @@ test('basic count state', async () => {
   expect(onRender).toHaveBeenCalledTimes(2);
 });
 
+test('subscribe', async () => {
+  const onRender = jest.fn();
+  const Counter = () => {
+    onRender();
+    const [count, setCount] = Democrat.useState(0);
+
+    return {
+      count,
+      setCount,
+    };
+  };
+  const store = Democrat.render(Democrat.createElement(Counter));
+  const onState = jest.fn();
+  store.subscribe(onState);
+  store.getState().setCount(42);
+  await waitForNextState(store);
+  store.getState().setCount(0);
+  await waitForNextState(store);
+  expect(onState).toHaveBeenCalledTimes(2);
+});
+
+test('subscribe wit useMemo', async () => {
+  const onRender = jest.fn();
+  const Counter = () => {
+    onRender();
+    const [count, setCount] = Democrat.useState(0);
+
+    const result = Democrat.useMemo(
+      () => ({
+        count,
+        setCount,
+      }),
+      [count, setCount]
+    );
+
+    return result;
+  };
+  const store = Democrat.render(Democrat.createElement(Counter));
+  const onState = jest.fn();
+  store.subscribe(onState);
+  store.getState().setCount(42);
+  await waitForNextState(store);
+  store.getState().setCount(0);
+  await waitForNextState(store);
+  expect(onState).toHaveBeenCalledTimes(2);
+});
+
 test('set two states', async () => {
   expect.assertions(3);
   const render = jest.fn();
@@ -278,6 +325,72 @@ test('conditionnaly use a children', async () => {
   store.getState().setShow(true);
   await waitForNextState(store);
   expect(store.getState().child).toEqual(42);
+});
+
+test('render a children', async () => {
+  const Child = () => {
+    const [count, setCount] = Democrat.useState(0);
+    return Democrat.useMemo(
+      () => ({
+        count,
+        setCount,
+      }),
+      [count, setCount]
+    );
+  };
+
+  const Store = () => {
+    const [count, setCount] = Democrat.useState(0);
+    const child = Democrat.useChildren(Democrat.createElement(Child));
+    return Democrat.useMemo(
+      () => ({
+        count,
+        setCount,
+        child,
+      }),
+      [count, setCount, child]
+    );
+  };
+  const store = Democrat.render(Democrat.createElement(Store));
+  expect(store.getState().child.count).toEqual(0);
+  store.getState().child.setCount(42);
+  await waitForNextState(store);
+  expect(store.getState().child.count).toEqual(42);
+});
+
+test('subscribe when children change', async () => {
+  const Child = () => {
+    const [count, setCount] = Democrat.useState(0);
+    return Democrat.useMemo(
+      () => ({
+        count,
+        setCount,
+      }),
+      [count, setCount]
+    );
+  };
+
+  const Store = () => {
+    const [count, setCount] = Democrat.useState(0);
+    const child = Democrat.useChildren(Democrat.createElement(Child));
+    return Democrat.useMemo(
+      () => ({
+        count,
+        setCount,
+        child,
+      }),
+      [count, setCount, child]
+    );
+  };
+  const store = Democrat.render(Democrat.createElement(Store));
+  const onState = jest.fn();
+  store.subscribe(onState);
+  store.getState().child.setCount(42);
+  await waitForNextState(store);
+  store.getState().child.setCount(1);
+  await waitForNextState(store);
+  expect(store.getState().child.count).toEqual(1);
+  expect(onState).toHaveBeenCalledTimes(2);
 });
 
 test('array of children', async () => {
