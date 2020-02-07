@@ -187,16 +187,17 @@ const CHILDREN_LIFECYCLES: {
       return;
     },
     cleanup: (tree, type, force) => {
-      if (force || tree.state === 'removed') {
-        // force cleanup
-        runCleanupOfChild(tree, type, true);
-        return;
+      if (tree.hooks) {
+        tree.hooks.forEach(hook => {
+          if (hook.type === 'CHILDREN') {
+            cleanup(hook.tree, type, force);
+            return;
+          }
+          if (hook.type === type && hook.cleanup && (hook.dirty || force)) {
+            hook.cleanup();
+          }
+        });
       }
-      if (tree.state === 'created') {
-        // when a child is 'created' we don't need to cleanup
-        return;
-      }
-      runCleanupOfChild(tree, type, false);
     },
   },
   ARRAY: {
@@ -218,6 +219,8 @@ const CHILDREN_LIFECYCLES: {
       // is not the same as effects order
       const sameStructure = sameArrayStructure(tree.children, element);
       if (sameStructure) {
+        // same structure just loop through item
+        // to update them
         let updated = false;
         tree.children = withGlobalRenderingInstance(tree, () => {
           return element.map((child, index) => {
@@ -278,15 +281,19 @@ const CHILDREN_LIFECYCLES: {
       });
     },
     cleanup: (tree, type, force) => {
-      if (force === true || tree.state === 'removed') {
-        tree.children.forEach(child => {
-          cleanup(child, type, true);
-        });
-        return;
-      }
       tree.children.forEach(child => {
-        cleanup(child, type, false);
+        cleanup(child, type, force);
       });
+
+      // if (force === true || tree.state === 'removed') {
+      //   tree.children.forEach(child => {
+      //     cleanup(child, type, true);
+      //   });
+      //   return;
+      // }
+      // tree.children.forEach(child => {
+      //   cleanup(child, type, false);
+      // });
     },
   },
   OBJECT: {
@@ -618,11 +625,12 @@ function effectInternal(tree: TreeElement, type: EffectType) {
   if (state === 'stable' || state === 'removed') {
     return;
   }
+  const res = CHILDREN_LIFECYCLES[tree.type].effect(tree as any, type);
   if (type === 'EFFECT') {
     // once effect is done, the tree is stable
     tree.state = 'stable';
   }
-  return CHILDREN_LIFECYCLES[tree.type].effect(tree as any, type);
+  return res;
 }
 
 function unmount(tree: TreeElement) {
@@ -640,24 +648,48 @@ function layoutEffects(tree: TreeElement) {
   effectInternal(tree, 'LAYOUT_EFFECT');
 }
 
+function cleanupTree(tree: TreeElement, type: EffectType, force: boolean) {
+  const doForce = tree.state === 'removed' ? true : force;
+  CHILDREN_LIFECYCLES[tree.type].cleanup(tree as any, type, doForce);
+}
+
 function cleanup(tree: TreeElement, type: EffectType, force: boolean) {
-  if (force === false && tree.state === 'stable') {
-    return;
-  }
-  if (force === true || tree.state === 'removed') {
-    CHILDREN_LIFECYCLES[tree.type].cleanup(tree.previous as any, type, true);
-    return;
-  }
   if (tree.previous) {
-    // not removing
-    // we cleanup the previous instance
-    CHILDREN_LIFECYCLES[tree.type].cleanup(tree.previous as any, type, false);
-    if (type === 'EFFECT') {
-      // if we cleanup effects we don't need this anymore
-      tree.previous = null;
-    }
+    cleanupTree(tree.previous, type, force);
+  }
+  if (tree.state === 'created') {
+    // no need to cleanup
     return;
   }
+  cleanupTree(tree, type, force);
+  if (type === 'EFFECT' && tree.previous) {
+    // if we cleanup effects we don't need this anymore
+    tree.previous = null;
+  }
+
+  // if (force === false && tree.state === 'stable') {
+  //   return;
+  // }
+  // if (force === true || tree.state === 'removed') {
+  //   return;
+  // }
+  // if (tree.state === 'created') {
+  //   if (tree.previous) {
+  //     // not removing
+  //     // we cleanup the previous instance
+  //     CHILDREN_LIFECYCLES[tree.type].cleanup(tree.previous as any, type, false);
+  //     if (type === 'EFFECT') {
+  //       // if we cleanup effects we don't need this anymore
+  //       tree.previous = null;
+  //     }
+  //     return;
+  //   }
+  //   return;
+  // }
+  // if (tree.state === 'updated') {
+  //   CHILDREN_LIFECYCLES[tree.type].cleanup(tree as any, type, force);
+  //   return;
+  // }
 }
 
 function renderComponent<P, T>(
@@ -712,20 +744,4 @@ function afterRender(instance: TreeElement<'CHILD'>) {
   });
   instance.hooks = instance.nextHooks;
   instance.dirty = false;
-}
-
-function runCleanupOfChild(tree: TreeElement<'CHILD'>, type: EffectType, force: boolean) {
-  withGlobaleEffectsInstance(tree, () => {
-    if (tree.hooks) {
-      tree.hooks.forEach(hook => {
-        if (hook.type === 'CHILDREN') {
-          cleanup(hook.tree, type, force);
-          return;
-        }
-        if (hook.type === type && hook.cleanup && (hook.dirty || force)) {
-          hook.cleanup();
-        }
-      });
-    }
-  });
 }

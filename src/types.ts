@@ -180,6 +180,7 @@ export type TreeElementState = 'created' | 'stable' | 'updated' | 'removed';
 export type TreeElementCommon = {
   id: number;
   parent: TreeElement;
+  // when structure change we keep the previous one to cleanup
   previous: TreeElement | null;
   value: any;
   state: TreeElementState;

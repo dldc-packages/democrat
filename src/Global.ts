@@ -32,13 +32,13 @@ export function withGlobalRenderingInstance<T>(current: TreeElement, exec: () =>
   return result;
 }
 
-export function withGlobaleEffectsInstance(current: TreeElement, exec: () => void) {
-  if (getInternalState().effects !== current.parent) {
+export function withGlobaleEffectsInstance(next: TreeElement, exec: () => void) {
+  if (getInternalState().effects !== next.parent) {
     throw new Error('Invalid parent !');
   }
-  getInternalState().effects = current;
+  getInternalState().effects = next;
   exec();
-  getInternalState().effects = current.parent;
+  getInternalState().effects = next.parent;
 }
 
 export function getCurrentChildInstance(): TreeElement<'CHILD'> {
