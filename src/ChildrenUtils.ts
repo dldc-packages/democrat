@@ -656,16 +656,16 @@ function cleanupTree(tree: TreeElement, type: EffectType, force: boolean) {
 function cleanup(tree: TreeElement, type: EffectType, force: boolean) {
   if (tree.previous) {
     cleanupTree(tree.previous, type, force);
+    if (type === 'EFFECT' && tree.previous) {
+      // if we cleanup effects we don't need this anymore
+      tree.previous = null;
+    }
   }
   if (tree.state === 'created') {
     // no need to cleanup
     return;
   }
   cleanupTree(tree, type, force);
-  if (type === 'EFFECT' && tree.previous) {
-    // if we cleanup effects we don't need this anymore
-    tree.previous = null;
-  }
 
   // if (force === false && tree.state === 'stable') {
   //   return;

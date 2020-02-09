@@ -155,6 +155,44 @@ test('effects cleanup runs', async () => {
   expect(onEffectCleanup).toHaveBeenCalled();
 });
 
+test('runs cleanup only once', async () => {
+  const onLayoutEffect = jest.fn();
+  const onLayoutEffectCleanup = jest.fn();
+
+  const Child = () => {
+    Democrat.useLayoutEffect(() => {
+      onLayoutEffect();
+      return onLayoutEffectCleanup;
+    }, []);
+  };
+
+  const Counter = () => {
+    const [count, setCount] = Democrat.useState(0);
+
+    const child = Democrat.useChildren(count < 10 ? Democrat.createElement(Child) : null);
+
+    return {
+      child,
+      count,
+      setCount,
+    };
+  };
+  const store = Democrat.render(Democrat.createElement(Counter));
+  await waitForNextTick();
+  expect(onLayoutEffectCleanup).not.toHaveBeenCalled();
+  expect(onLayoutEffect).toBeCalledTimes(1);
+  // should unmount
+  store.getState().setCount(12);
+  await waitForNextState(store);
+  expect(onLayoutEffectCleanup).toBeCalledTimes(1);
+  expect(onLayoutEffect).toBeCalledTimes(1);
+  // stay unmounted
+  store.getState().setCount(13);
+  await waitForNextState(store);
+  expect(onLayoutEffectCleanup).toBeCalledTimes(1);
+  expect(onLayoutEffect).toBeCalledTimes(1);
+});
+
 test('use effect when re-render', async () => {
   const onUseEffect = jest.fn();
   const Counter = () => {
