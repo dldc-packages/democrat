@@ -14,10 +14,21 @@ export type EffectType = 'EFFECT' | 'LAYOUT_EFFECT';
 
 type Unsubscribe = () => void;
 
+export interface Patch {
+  path: Array<TreeElementPath>;
+  hookIndex: number;
+  value: any;
+}
+
+export type Patches = Array<Patch>;
+
 export interface Store<S> {
   getState: () => S;
   subscribe: (onChange: () => void) => Unsubscribe;
   destroy: () => void;
+  // patches
+  subscribePatches: (onPatches: (patches: Patches) => void) => Unsubscribe;
+  applyPatches: (patches: Patches) => void;
 }
 
 export type Key = string | number | undefined;
@@ -27,9 +38,9 @@ export interface DemocratContextProvider<P> {
   context: Context<P>;
 }
 
-export type ContextConsumerRender<T, HasDefault extends boolean, C> = (
-  value: HasDefault extends true ? T : T | undefined
-) => C;
+// type ContextConsumerRender<T, HasDefault extends boolean, C> = (
+//   value: HasDefault extends true ? T : T | undefined
+// ) => C;
 
 export interface DemocratContextConsumer<P> {
   [DEMOCRAT_CONTEXT]: 'CONSUMER';
@@ -41,9 +52,9 @@ export type ContextProviderProps<P, T> = Props<{
   children: T;
 }>;
 
-export type ContextConsumerProps<P, T> = Props<{
-  children: ContextConsumerRender<P, boolean, T>;
-}>;
+// export type ContextConsumerProps<P, T> = Props<{
+//   children: ContextConsumerRender<P, boolean, T>;
+// }>;
 
 export interface DemocratElementComponent<P, T> {
   [DEMOCRAT_ELEMENT]: true;
@@ -59,12 +70,12 @@ export interface DemocratElementProvider<P, T> {
   key: Key;
 }
 
-export interface DemocratElementConsumer<P, T> {
-  [DEMOCRAT_ELEMENT]: true;
-  type: DemocratContextConsumer<P>;
-  props: ContextConsumerProps<P, T>;
-  key: Key;
-}
+// export interface DemocratElementConsumer<P, T> {
+//   [DEMOCRAT_ELEMENT]: true;
+//   type: DemocratContextConsumer<P>;
+//   props: ContextConsumerProps<P, T>;
+//   key: Key;
+// }
 
 export interface DemocratRootElement {
   [DEMOCRAT_ELEMENT]: true;
@@ -76,10 +87,8 @@ export interface DemocratRootElement {
  * For components: P is Props, T is return type
  * For contexts: P is Context value, T is return type
  */
-export type DemocratElement<P, T> =
-  | DemocratElementComponent<P, T>
-  | DemocratElementProvider<P, T>
-  | DemocratElementConsumer<P, T>;
+export type DemocratElement<P, T> = DemocratElementComponent<P, T> | DemocratElementProvider<P, T>;
+// | DemocratElementConsumer<P, T>;
 
 export interface Context<T, HasDefault extends boolean = boolean> {
   [DEMOCRAT_CONTEXT]: {
@@ -94,6 +103,7 @@ export type Children =
   | DemocratElement<any, any>
   | null
   | Array<Children>
+  | Map<any, Children>
   | { [key: string]: Children };
 
 export type ResolveType<C> = C extends DemocratElement<any, infer T>
@@ -102,6 +112,8 @@ export type ResolveType<C> = C extends DemocratElement<any, infer T>
   ? null
   : C extends Array<infer T>
   ? Array<ResolveType<T>>
+  : C extends Map<infer K, infer V>
+  ? Map<K, ResolveType<V>>
   : C extends { [key: string]: Children }
   ? { [K in keyof C]: ResolveType<C[K]> }
   : never;
@@ -115,6 +127,7 @@ export interface StateHookData {
 export interface ChildrenHookData {
   type: 'CHILDREN';
   tree: TreeElement;
+  path: TreeElementPath<'CHILD'>;
 }
 
 export type RefHookData = {
@@ -163,12 +176,6 @@ export type HooksData =
 export type OnIdleExec = () => void;
 export type OnIdle = (exec: OnIdleExec) => void;
 
-export type InternalState = {
-  rendering: null | TreeElement;
-  effects: null | TreeElement;
-  reactHooksSupported: boolean;
-};
-
 export type Props<P> = P & { key?: string | number };
 
 export type Component<P, S> = (props: Props<P>) => S;
@@ -180,6 +187,7 @@ export type TreeElementState = 'created' | 'stable' | 'updated' | 'removed';
 export type TreeElementCommon = {
   id: number;
   parent: TreeElement;
+  path: TreeElementPath;
   // when structure change we keep the previous one to cleanup
   previous: TreeElement | null;
   value: any;
@@ -190,18 +198,26 @@ export type TreeElementCommon = {
 export type TreeElementData = {
   ROOT: {
     onIdle: OnIdle;
-    requestRender: () => void;
     mounted: boolean;
+    passiveMode: boolean;
     children: TreeElement;
     context: Map<Context<any>, Set<TreeElement<'CHILD'>>>;
+    requestRender: (pathch: Patch | null) => void;
+    supportReactHooks: (ReactInstance: any, Hooks: any) => void;
+    isRendering: () => boolean;
+    applyPatches: (patches: Patches) => void;
+    findProvider: (context: Context<any>) => TreeElement<'PROVIDER'> | null;
+    markDirty: (instance: TreeElement<'CHILD'>, limit?: TreeElement | null) => void;
+    withGlobalRenderingInstance: <T>(current: TreeElement, exec: () => T) => T;
+    getCurrentRenderingChildInstance: () => TreeElement<'CHILD'>;
+    getCurrentHook: () => HooksData | null;
+    getCurrentHookIndex: () => number;
+    setCurrentHook: (hook: HooksData) => void;
   };
   NULL: {};
   PROVIDER: {
     element: DemocratElementProvider<any, any>;
     children: TreeElement;
-  };
-  CONSUMER: {
-    element: DemocratElementConsumer<any, any>;
   };
   CHILD: {
     element: DemocratElementComponent<any, any>;
@@ -216,10 +232,15 @@ export type TreeElementData = {
   MAP: {
     children: Map<any, TreeElement>;
   };
-  SET: {
-    children: Set<TreeElement>;
-  };
+  // CONSUMER: {
+  //   element: DemocratElementConsumer<any, any>;
+  // };
+  // SET: {
+  //   children: Set<TreeElement>;
+  // };
 };
+
+export type TreeElementType = keyof TreeElementData;
 
 type TreeElementResolved = {
   [K in keyof TreeElementData]: TreeElementCommon & {
@@ -227,6 +248,53 @@ type TreeElementResolved = {
   } & TreeElementData[K];
 };
 
-export type TreeElementType = keyof TreeElementResolved;
-
 export type TreeElement<K extends TreeElementType = TreeElementType> = TreeElementResolved[K];
+
+type CreateTreeElementMap<T extends { [K in TreeElementType]: any }> = T;
+
+export type TreeElementRaw = CreateTreeElementMap<{
+  ROOT: DemocratRootElement;
+  NULL: null;
+  CHILD: DemocratElementComponent<any, any>;
+  PROVIDER: DemocratElementProvider<any, any>;
+  ARRAY: Array<any>;
+  OBJECT: { [key: string]: any };
+  MAP: Map<any, any>;
+  // CONSUMER: DemocratElementConsumer<any, any>;
+  // SET: Set<any>;
+}>;
+
+type TreeElementPathData = CreateTreeElementMap<{
+  ROOT: {};
+  NULL: {};
+  CHILD: {
+    hookIndex: number;
+  };
+  PROVIDER: {};
+  CONSUMER: {};
+  ARRAY: { index: number };
+  OBJECT: { objectKey: string };
+  MAP: { mapKey: any };
+  // SET: { elementKey: any };
+}>;
+
+type TreeElementPathResolved = {
+  [K in keyof TreeElementData]: {
+    type: K;
+  } & TreeElementPathData[K];
+};
+
+export type TreeElementPath<
+  K extends TreeElementType = TreeElementType
+> = TreeElementPathResolved[K];
+
+// export type ReducerWithoutAction<S> = (prevState: S) => S;
+// export type ReducerStateWithoutAction<
+//   R extends ReducerWithoutAction<any>
+// > = R extends ReducerWithoutAction<infer S> ? S : never;
+// export type DispatchWithoutAction = () => void;
+// export type Reducer<S, A> = (prevState: S, action: A) => S;
+// export type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;
+// export type ReducerAction<R extends Reducer<any, any>> = R extends Reducer<any, infer A>
+//   ? A
+//   : never;

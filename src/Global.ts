@@ -1,63 +1,14 @@
-import { InternalState, TreeElement, HooksData } from './types';
+import { TreeElement } from './types';
 
-const INTERNAL_STATE: InternalState = {
-  rendering: null,
-  effects: null,
-  reactHooksSupported: false,
-};
+let GLOBAL_STATE: TreeElement<'ROOT'> | null = null;
 
-export function getInternalState() {
-  return INTERNAL_STATE;
-}
-
-// function logTree(name: string, tree: TreeElement | null) {
-//   if (tree === null) {
-//     console.log(`${name}: null`);
-//     return;
-//   }
-//   const str = `${name}: ${tree.id}(${tree.type})`;
-//   console.log(str);
-// }
-
-export function withGlobalRenderingInstance<T>(current: TreeElement, exec: () => T): T {
-  if (getInternalState().rendering !== current.parent) {
-    // logTree('current', current);
-    // logTree('parent', current.parent);
-    // logTree('invalid', getInternalState().rendering);
-    throw new Error('Invalid parent !');
+export function getCurrentRootInstance(): TreeElement<'ROOT'> {
+  if (GLOBAL_STATE === null) {
+    throw new Error('Calling hook outside of component');
   }
-  getInternalState().rendering = current;
-  const result = exec();
-  getInternalState().rendering = current.parent;
-  return result;
+  return GLOBAL_STATE;
 }
 
-export function withGlobaleEffectsInstance(next: TreeElement, exec: () => void) {
-  if (getInternalState().effects !== next.parent) {
-    throw new Error('Invalid parent !');
-  }
-  getInternalState().effects = next;
-  exec();
-  getInternalState().effects = next.parent;
-}
-
-export function getCurrentChildInstance(): TreeElement<'CHILD'> {
-  const tree = getInternalState().rendering;
-  if (tree === null || tree.type !== 'CHILD') {
-    throw new Error(`Hooks used outside of render !`);
-  }
-  return tree;
-}
-
-export function getCurrentHook(): HooksData | null {
-  const instance = getCurrentChildInstance();
-  if (instance.hooks && instance.hooks.length > 0) {
-    return instance.hooks[instance.nextHooks.length] || null;
-  }
-  return null;
-}
-
-export function setCurrentHook(hook: HooksData) {
-  const instance = getCurrentChildInstance();
-  instance.nextHooks.push(hook);
+export function setCurrentRootInstance(instance: TreeElement<'ROOT'> | null): void {
+  GLOBAL_STATE = instance;
 }

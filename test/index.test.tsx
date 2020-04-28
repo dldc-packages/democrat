@@ -377,6 +377,22 @@ test('render a context and update it', async () => {
   expect(store.getState().count).toEqual(2);
 });
 
+test('read a context with no provider', async () => {
+  const NumCtx = Democrat.createContext<number>(10);
+
+  const Store = () => {
+    const num = Democrat.useContext(NumCtx);
+    const [count, setCount] = Democrat.useState(0);
+
+    return {
+      count: count + num,
+      setCount,
+    };
+  };
+  const store = Democrat.render(Democrat.createElement(Store));
+  expect(store.getState().count).toEqual(10);
+});
+
 test('conditionnaly use a children', async () => {
   const Child = () => {
     return 42;
@@ -679,4 +695,27 @@ test('remove key of array child', async () => {
   expect(onRender).toHaveBeenCalledTimes(2);
   const out2 = store.getState().child[0];
   expect(out2).not.toEqual(out1);
+});
+
+test('render an array as root', () => {
+  const Child = () => {
+    return 42;
+  };
+  expect(() =>
+    Democrat.render([Democrat.createElement(Child), Democrat.createElement(Child)])
+  ).not.toThrow();
+  const store = Democrat.render([Democrat.createElement(Child), Democrat.createElement(Child)]);
+  expect(store.getState()).toEqual([42, 42]);
+});
+
+test('throw when render invalid element', () => {
+  expect(() => Democrat.render(new Date() as any)).toThrow('Invalid children type');
+});
+
+test('throw when render a Set', () => {
+  expect(() => Democrat.render(new Set() as any)).toThrow('Set are not supported');
+});
+
+test('render a Map', () => {
+  expect(() => Democrat.render(new Map())).not.toThrow();
 });

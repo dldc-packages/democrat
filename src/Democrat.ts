@@ -1,18 +1,12 @@
 import { Subscription } from 'suub';
 import { ChildrenUtils } from './ChildrenUtils';
-import {
-  getInternalState,
-  getCurrentHook,
-  getCurrentChildInstance,
-  setCurrentHook,
-} from './Global';
+import { getCurrentRootInstance, setCurrentRootInstance } from './Global';
 import {
   depsChanged,
-  markDirty,
   globalSetTimeout,
   globalClearTimeout,
   createRootTreeElement,
-  findProvider,
+  getPatchPath,
 } from './utils';
 import {
   Store,
@@ -27,7 +21,6 @@ import {
   EffectHookData,
   LayoutEffectHookData,
   MemoHookData,
-  DemocratElement,
   MutableRefObject,
   RefHookData,
   EffectType,
@@ -35,6 +28,9 @@ import {
   ContextHookData,
   DemocratRootElement,
   TreeElement,
+  TreeElementPath,
+  Patch,
+  Patches,
 } from './types';
 import { DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 
@@ -51,29 +47,28 @@ const Hooks = {
   useRef,
 };
 
-export function supportReactHooks(React: any) {
-  if (getInternalState().reactHooksSupported) {
-    return;
-  }
-  const methods = ['useState', 'useEffect', 'useMemo', 'useCallback', 'useLayoutEffect', 'useRef'];
-  methods.forEach(name => {
-    const originalFn = React[name];
-    React[name] = (...args: Array<any>) => {
-      if (getInternalState().rendering) {
-        return (Hooks as any)[name](...args);
-      }
-      return originalFn(...args);
-    };
-  });
+export interface RenderOptions {
+  // pass an instance of React to override hooks
+  ReactInstance?: null | any;
+  // In passive mode, effect are never not executed
+  passiveMode?: boolean;
 }
 
-export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
-  const sub = Subscription.create();
-  let state: T;
+export function render<C extends Children>(
+  rootChildren: C,
+  options: RenderOptions = {}
+): Store<ResolveType<C>> {
+  const { ReactInstance = null, passiveMode = false } = options;
+
+  const stateSub = Subscription.create();
+  const patchesSub = Subscription.create<Patches>();
+
+  let state: ResolveType<C>;
   let destroyed: boolean = false;
   let execQueue: null | Array<OnIdleExec> = null;
   let renderRequested = false;
   let flushScheduled = false;
+  let patchesQueue: Patches = [];
 
   const rootElem: DemocratRootElement = {
     [DEMOCRAT_ELEMENT]: true,
@@ -84,30 +79,35 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
   let rootInstance: TreeElement<'ROOT'> = createRootTreeElement({
     onIdle,
     requestRender,
-    value: null,
-    previous: null,
-    mounted: false,
-    children: null as any,
-    context: new Map(),
+    applyPatches,
+    passiveMode,
   });
+
+  if (ReactInstance) {
+    rootInstance.supportReactHooks(ReactInstance, Hooks);
+  }
 
   doRender();
 
   return {
     getState: () => state,
-    subscribe: sub.subscribe,
+    subscribe: stateSub.subscribe,
     destroy,
+    subscribePatches: patchesSub.subscribe,
+    applyPatches,
   };
 
   function doRender(): void {
     if (destroyed) {
       throw new Error('Store destroyed');
     }
+    setCurrentRootInstance(rootInstance);
     if (rootInstance.mounted === false) {
-      rootInstance = ChildrenUtils.mount(rootElem, rootInstance) as any;
+      rootInstance = ChildrenUtils.mount(rootElem, rootInstance, null as any) as any;
     } else {
-      rootInstance = ChildrenUtils.update(rootInstance, rootElem, null) as any;
+      rootInstance = ChildrenUtils.update(rootInstance, rootElem, null as any, null as any) as any;
     }
+    setCurrentRootInstance(null);
     state = rootInstance.value;
     // Schedule setTimeout(() => runEffect)
     const effectTimer = scheduleEffects();
@@ -125,7 +125,12 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
       doRender();
     } else {
       // not setState in Layout effect
-      sub.call();
+      stateSub.call();
+      if (patchesQueue.length > 0) {
+        const patches = patchesQueue;
+        patchesQueue = [];
+        patchesSub.call(patches);
+      }
       return;
     }
   }
@@ -134,7 +139,7 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
     if (destroyed) {
       throw new Error('Store destroyed');
     }
-    if (getInternalState().rendering !== null) {
+    if (rootInstance.isRendering()) {
       throw new Error(`Cannot setState during render !`);
     }
     if (execQueue === null) {
@@ -159,7 +164,10 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
     }, 0);
   }
 
-  function requestRender(): void {
+  function requestRender(patch: Patch | null): void {
+    if (patch) {
+      patchesQueue.push(patch);
+    }
     renderRequested = true;
   }
 
@@ -184,6 +192,26 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
     }, 0);
   }
 
+  function applyPatches(patches: Patches) {
+    rootInstance.onIdle(() => {
+      patches.forEach(patch => {
+        const instance = ChildrenUtils.access(rootInstance, patch.path);
+        if (instance === null || instance.type !== 'CHILD' || instance.hooks === null) {
+          return;
+        }
+        const hook = instance.hooks[patch.hookIndex];
+        if (!hook || hook.type !== 'STATE') {
+          return;
+        }
+        // Should we use setValue ? If yes we need to prevent from re-emitting the patch
+        // hook.setValue(patch.value)
+        hook.value = patch.value;
+        rootInstance.markDirty(instance);
+        instance.root.requestRender(null);
+      });
+    });
+  }
+
   function destroy() {
     if (destroyed) {
       throw new Error('Store already destroyed');
@@ -194,28 +222,69 @@ export function render<P, T>(rootChildren: DemocratElement<P, T>): Store<T> {
 }
 
 export function useChildren<C extends Children>(children: C): ResolveType<C> {
-  const hook = getCurrentHook();
-  const parent = getCurrentChildInstance();
+  const root = getCurrentRootInstance();
+  const hook = root.getCurrentHook();
   if (hook === null) {
-    const childrenTree = ChildrenUtils.mount(children, parent);
-    setCurrentHook({
+    const instance = root.getCurrentRenderingChildInstance();
+    const hookIndex = root.getCurrentHookIndex();
+    const path: TreeElementPath<'CHILD'> = { type: 'CHILD', hookIndex };
+    const childrenTree = ChildrenUtils.mount(children, instance, path);
+    root.setCurrentHook({
       type: 'CHILDREN',
       tree: childrenTree,
+      path,
     });
     return childrenTree.value;
   }
   if (hook.type !== 'CHILDREN') {
     throw new Error('Invalid Hook type');
   }
-  hook.tree = ChildrenUtils.update(hook.tree, children, hook.tree.parent);
-  setCurrentHook(hook);
+  hook.tree = ChildrenUtils.update(hook.tree, children, hook.tree.parent, hook.path);
+  root.setCurrentHook(hook);
   return hook.tree.value;
 }
 
+// // overload where dispatch could accept 0 arguments.
+// export function useReducer<R extends ReducerWithoutAction<any>, I>(
+//   reducer: R,
+//   initializerArg: I,
+//   initializer: (arg: I) => ReducerStateWithoutAction<R>
+// ): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
+// // overload where dispatch could accept 0 arguments.
+// export function useReducer<R extends ReducerWithoutAction<any>>(
+//   reducer: R,
+//   initializerArg: ReducerStateWithoutAction<R>,
+//   initializer?: undefined
+// ): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
+// // overload where "I" may be a subset of ReducerState<R>; used to provide autocompletion.
+// // If "I" matches ReducerState<R> exactly then the last overload will allow initializer to be ommitted.
+// // the last overload effectively behaves as if the identity function (x => x) is the initializer.
+// export function useReducer<R extends Reducer<any, any>, I>(
+//   reducer: R,
+//   initializerArg: I & ReducerState<R>,
+//   initializer: (arg: I & ReducerState<R>) => ReducerState<R>
+// ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
+// // overload for free "I"; all goes as long as initializer converts it into "ReducerState<R>".
+// export function useReducer<R extends Reducer<any, any>, I>(
+//   reducer: R,
+//   initializerArg: I,
+//   initializer: (arg: I) => ReducerState<R>
+// ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
+// // implementation
+// export function useReducer(
+//   reducer: any,
+//   initializerArg: any,
+//   initializer?: any
+// ): [any, Dispatch<any>] {
+//   return [] as any;
+// }
+
 export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>] {
-  const hook = getCurrentHook();
-  const instance = getCurrentChildInstance();
+  const root = getCurrentRootInstance();
+  const hook = root.getCurrentHook();
+  const instance = root.getCurrentRenderingChildInstance();
   if (hook === null) {
+    const hookIndex = root.getCurrentHookIndex();
     const value = typeof initialState === 'function' ? (initialState as any)() : initialState;
     const setValue: Dispatch<SetStateAction<S>> = value => {
       if (instance.state === 'removed') {
@@ -224,20 +293,25 @@ export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateA
       instance.root.onIdle(() => {
         const nextValue = typeof value === 'function' ? (value as any)(stateHook.value) : value;
         if (nextValue !== stateHook.value) {
+          const patch: Patch = {
+            path: getPatchPath(instance),
+            hookIndex,
+            value: nextValue,
+          };
           stateHook.value = nextValue;
-          markDirty(instance);
-          instance.root.requestRender();
+          root.markDirty(instance);
+          instance.root.requestRender(patch);
         }
       });
     };
     const stateHook: StateHookData = { type: 'STATE', value, setValue };
-    setCurrentHook(stateHook);
+    root.setCurrentHook(stateHook);
     return [value, setValue];
   }
   if (hook.type !== 'STATE') {
     throw new Error('Invalid Hook type');
   }
-  setCurrentHook(hook);
+  root.setCurrentHook(hook);
   return [hook.value, hook.setValue];
 }
 
@@ -249,43 +323,49 @@ export function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): 
   return useEffectInternal('LAYOUT_EFFECT', effect, deps);
 }
 
-function useEffectInternal(type: EffectType, effect: EffectCallback, deps?: DependencyList): void {
-  const hook = getCurrentHook();
+function useEffectInternal(
+  effecType: EffectType,
+  effect: EffectCallback,
+  deps?: DependencyList
+): void {
+  const root = getCurrentRootInstance();
+  const hook = root.getCurrentHook();
   if (hook === null) {
     const effectHook: EffectHookData | LayoutEffectHookData = {
-      type,
+      type: effecType,
       effect,
       cleanup: undefined,
       deps,
       dirty: true,
     };
-    setCurrentHook(effectHook);
+    root.setCurrentHook(effectHook);
     return;
   }
-  if (hook.type !== type) {
+  if (hook.type !== effecType) {
     throw new Error('Invalid Hook type');
   }
   if (depsChanged(hook.deps, deps)) {
     hook.effect = effect;
     hook.deps = deps;
     hook.dirty = true;
-    setCurrentHook(hook);
+    root.setCurrentHook(hook);
     return;
   }
   // ignore this effect
-  setCurrentHook(hook);
+  root.setCurrentHook(hook);
   return;
 }
 
 export function useMemo<T>(factory: () => T, deps: DependencyList | undefined): T {
-  const hook = getCurrentHook();
+  const root = getCurrentRootInstance();
+  const hook = root.getCurrentHook();
   if (hook === null) {
     const memoHook: MemoHookData = {
       type: 'MEMO',
       value: factory(),
       deps,
     };
-    setCurrentHook(memoHook);
+    root.setCurrentHook(memoHook);
     return memoHook.value;
   }
   if (hook.type !== 'MEMO') {
@@ -295,7 +375,7 @@ export function useMemo<T>(factory: () => T, deps: DependencyList | undefined): 
     hook.deps = deps;
     hook.value = factory();
   }
-  setCurrentHook(hook);
+  root.setCurrentHook(hook);
   return hook.value;
 }
 
@@ -310,7 +390,8 @@ export function useCallback<T extends (...args: any[]) => unknown>(
 export function useRef<T extends unknown>(initialValue: T): MutableRefObject<T>;
 export function useRef<T = undefined>(): MutableRefObject<T | undefined>;
 export function useRef<T>(initialValue?: T): MutableRefObject<T> {
-  const hook = getCurrentHook();
+  const root = getCurrentRootInstance();
+  const hook = root.getCurrentHook();
   if (hook === null) {
     const memoHook: RefHookData = {
       type: 'REF',
@@ -318,28 +399,28 @@ export function useRef<T>(initialValue?: T): MutableRefObject<T> {
         current: initialValue,
       },
     };
-    setCurrentHook(memoHook);
+    root.setCurrentHook(memoHook);
     return memoHook.ref;
   }
   if (hook.type !== 'REF') {
     throw new Error('Invalid Hook type');
   }
-  setCurrentHook(hook);
+  root.setCurrentHook(hook);
   return hook.ref;
 }
 
-export function useContextInternal<C extends Context<any>>(
+function useContextInternal<C extends Context<any>>(
   context: C
 ): { found: C[typeof DEMOCRAT_CONTEXT]['defaultValue']; value: any } {
-  const instance = getCurrentChildInstance();
-  const hook = getCurrentHook();
+  const root = getCurrentRootInstance();
+  const hook = root.getCurrentHook();
   if (hook !== null) {
     if (hook.type !== 'CONTEXT') {
       throw new Error('Invalid Hook type');
     }
   }
   // TODO: move provider and value resolution to the instance level
-  const provider = findProvider(instance, context);
+  const provider = root.findProvider(context);
   const value = provider
     ? provider.element.props.value
     : context[DEMOCRAT_CONTEXT].hasDefault
@@ -351,7 +432,7 @@ export function useContextInternal<C extends Context<any>>(
     provider,
     value,
   };
-  setCurrentHook(contextHook);
+  root.setCurrentHook(contextHook);
   return {
     found: provider !== null,
     value,

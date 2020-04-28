@@ -44,14 +44,13 @@
     "trailingComma": "es5"
   },
   "dependencies": {
-    "is-plain-object": "^3.0.0",
     "suub": "^2.0.3"
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",
     "codecov": "^3.6.5",
     "husky": "^4.2.5",
-    "np": "^6.2.1",
+    "np": "^6.2.3",
     "tsdx": "^0.13.2",
     "tslib": "^1.11.1",
     "typescript": "^3.8.3"

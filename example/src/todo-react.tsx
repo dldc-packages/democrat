@@ -2,10 +2,17 @@ import * as Democrat from '../../src';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-let nextId = 0;
+function generateId(): string {
+  return (
+    '_' +
+    Math.random()
+      .toString(36)
+      .substr(2, 9)
+  );
+}
 
 interface Todo {
-  id: number;
+  id: string;
   title: string;
   done: boolean;
 }
@@ -13,17 +20,17 @@ interface Todo {
 interface State {
   todos: Array<Todo>;
   addTodo: (title: string) => void;
-  toggleTodo: (todoId: number) => void;
+  toggleTodo: (todoId: string) => void;
 }
 
 const TodosStore: Democrat.Component<{}, State> = () => {
   const [todos, setTodos] = Democrat.useState<Array<Todo>>([]);
 
   const addTodo = Democrat.useCallback((title: string) => {
-    setTodos(prev => [...prev, { id: nextId++, title, done: false }]);
+    setTodos(prev => [...prev, { id: generateId(), title, done: false }]);
   }, []);
 
-  const toggleTodo = Democrat.useCallback((todoId: number) => {
+  const toggleTodo = Democrat.useCallback((todoId: string) => {
     setTodos(prev =>
       prev.map(todo => {
         if (todo.id === todoId) {
@@ -82,7 +89,14 @@ function runExample() {
     ReactDOM.render(<TodosRender state={store.getState()} />, document.getElementById('app'));
   };
 
+  (window as any).applyPatches = (patches: Democrat.Patches) => {
+    store.applyPatches(patches);
+  };
+
   store.subscribe(render);
+  store.subscribePatches(patches => {
+    console.log('Patches', patches);
+  });
 
   render();
   return () => {

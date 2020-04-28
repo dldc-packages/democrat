@@ -3,7 +3,7 @@ export {
   createContext,
   isValidElement,
   render,
-  supportReactHooks,
+  RenderOptions,
   // hooks
   useChildren,
   useState,
@@ -29,4 +29,7 @@ export {
   EffectCleanup,
   ResolveType,
   Context,
+  Patch,
+  Patches,
+  TreeElementPath,
 } from './types';

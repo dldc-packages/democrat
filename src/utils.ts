@@ -7,18 +7,21 @@ import {
   Context,
   DemocratElement,
   DemocratContextConsumer,
-  ContextConsumerProps,
   DemocratContextProvider,
   ContextProviderProps,
   ResolveType,
   DemocratElementComponent,
   DemocratElementProvider,
-  DemocratElementConsumer,
   TreeElementType,
   TreeElementCommon,
   TreeElementData,
   TreeElement,
   DemocratRootElement,
+  HooksData,
+  OnIdle,
+  TreeElementPath,
+  Patch,
+  Patches,
 } from './types';
 
 export function isValidElement(maybe: any): maybe is DemocratElement<any, any> {
@@ -29,14 +32,14 @@ export function isRootElement(maybe: any): maybe is DemocratRootElement {
   return maybe && maybe[DEMOCRAT_ELEMENT] === true && maybe[DEMOCRAT_ROOT] === true;
 }
 
+// export function createElement<P, T>(
+//   context: DemocratContextConsumer<P>,
+//   props: ContextConsumerProps<P, T>
+// ): DemocratElement<P, ResolveType<T>>;
 export function createElement<P, T>(
   component: Component<P, T>,
   props: Props<P>
 ): DemocratElement<P, T>;
-export function createElement<P, T>(
-  context: DemocratContextConsumer<P>,
-  props: ContextConsumerProps<P, T>
-): DemocratElement<P, ResolveType<T>>;
 export function createElement<P, T>(
   context: DemocratContextProvider<P>,
   props: ContextProviderProps<P, T>
@@ -90,22 +93,6 @@ export function sameObjectKeys(
   return arrayShallowEqual(Object.keys(obj1).sort(), Object.keys(obj2).sort());
 }
 
-export function arrayShallowEqual(deps1: ReadonlyArray<any>, deps2: ReadonlyArray<any>): boolean {
-  if (deps1 === deps2) {
-    return true;
-  }
-  if (deps1.length !== deps2.length) {
-    return false;
-  }
-  for (let i = 0; i < deps1.length; i++) {
-    const dep = deps1[i];
-    if (!Object.is(dep, deps2[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
 export function depsChanged(
   deps1: DependencyList | undefined,
   deps2: DependencyList | undefined
@@ -117,19 +104,6 @@ export function depsChanged(
     return true;
   }
   return !arrayShallowEqual(deps1, deps2);
-}
-
-export function markDirty(instance: TreeElement<'CHILD'>, limit: TreeElement | null = null) {
-  let current: TreeElement | null = instance;
-  while (current !== null && current !== limit) {
-    if (current.type === 'CHILD') {
-      if (current.dirty === true) {
-        break;
-      }
-      current.dirty = true;
-    }
-    current = current.parent;
-  }
 }
 
 export function mapObject<T extends { [key: string]: any }, U>(
@@ -153,13 +127,13 @@ export function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): M
   return result;
 }
 
-export function mapSet<V, U>(source: Set<V>, mapper: (v: V) => U): Set<U> {
-  const result = new Set<U>();
-  source.forEach(v => {
-    result.add(mapper(v));
-  });
-  return result;
-}
+// export function mapSet<V, U>(source: Set<V>, mapper: (v: V) => U): Set<U> {
+//   const result = new Set<U>();
+//   source.forEach(v => {
+//     result.add(mapper(v));
+//   });
+//   return result;
+// }
 
 export function createContext<T>(): Context<T, false>;
 export function createContext<T>(defaultValue: T): Context<T, true>;
@@ -195,11 +169,11 @@ export function isProviderElement(
   return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'PROVIDER';
 }
 
-export function isConsumerElement(
-  element: DemocratElement<any, any>
-): element is DemocratElementConsumer<any, any> {
-  return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'CONSUMER';
-}
+// export function isConsumerElement(
+//   element: DemocratElement<any, any>
+// ): element is DemocratElementConsumer<any, any> {
+//   return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'CONSUMER';
+// }
 
 const nextId = (() => {
   let id = 0;
@@ -209,30 +183,146 @@ const nextId = (() => {
 export function createTreeElement<T extends TreeElementType>(
   type: T,
   parent: TreeElement,
-  data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root'> & TreeElementData[T]
+  path: TreeElementPath,
+  data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root' | 'path'> & TreeElementData[T]
 ): TreeElement<T> {
   const id = nextId();
   return {
     type,
     id,
     state: 'created',
+    path,
     parent,
     root: parent.type === 'ROOT' ? parent : parent.root,
     ...data,
   } as any;
 }
 
-export function createRootTreeElement(
-  data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root'> & TreeElementData['ROOT']
-): TreeElement<'ROOT'> {
-  return {
+export function createRootTreeElement(data: {
+  onIdle: OnIdle;
+  passiveMode: boolean;
+  requestRender: (patch: Patch | null) => void;
+  applyPatches: (patches: Patches) => void;
+}): TreeElement<'ROOT'> {
+  let reactHooksSupported: boolean = false;
+  let renderingStack: Array<TreeElement> = [];
+
+  const rootTreeElement: TreeElement<'ROOT'> = {
     type: 'ROOT',
     id: nextId(),
+    mounted: false,
     state: 'created',
-    root: null,
-    parent: null,
+    root: null as any,
+    path: null as any,
+    parent: null as any,
+    value: null,
+    previous: null,
+    children: null as any,
+    context: new Map(),
+    supportReactHooks,
+    findProvider,
+    isRendering,
+    markDirty,
+    withGlobalRenderingInstance,
+    getCurrentRenderingChildInstance,
+    getCurrentHook,
+    getCurrentHookIndex,
+    setCurrentHook,
     ...data,
-  } as any;
+  };
+
+  rootTreeElement.root = rootTreeElement;
+
+  return rootTreeElement;
+
+  function markDirty(instance: TreeElement<'CHILD'>, limit: TreeElement | null = null) {
+    let current: TreeElement | null = instance;
+    while (current !== null && current !== limit) {
+      if (current.type === 'CHILD') {
+        if (current.dirty === true) {
+          break;
+        }
+        current.dirty = true;
+      }
+      current = current.parent;
+    }
+  }
+
+  function findProvider(context: Context<any>): TreeElement<'PROVIDER'> | null {
+    for (let i = renderingStack.length - 1; i >= 0; i--) {
+      const instance = renderingStack[i];
+      if (instance.type === 'PROVIDER' && instance.element.type.context === context) {
+        return instance;
+      }
+    }
+    return null;
+  }
+
+  function isRendering(): boolean {
+    return renderingStack.length > 0;
+  }
+
+  function supportReactHooks(ReactInstance: any, hooks: any) {
+    if (reactHooksSupported === false) {
+      reactHooksSupported = true;
+      const methods = [
+        'useState',
+        'useEffect',
+        'useMemo',
+        'useCallback',
+        'useLayoutEffect',
+        'useRef',
+      ];
+      methods.forEach(name => {
+        const originalFn = ReactInstance[name];
+        ReactInstance[name] = (...args: Array<any>) => {
+          if (isRendering()) {
+            return (hooks as any)[name](...args);
+          }
+          return originalFn(...args);
+        };
+      });
+    }
+  }
+
+  function withGlobalRenderingInstance<T>(current: TreeElement, exec: () => T): T {
+    renderingStack.push(current);
+    const result = exec();
+    renderingStack.pop();
+    return result;
+  }
+
+  function getCurrentRenderingChildInstance(): TreeElement<'CHILD'> {
+    if (renderingStack.length === 0) {
+      throw new Error(`Hooks used outside of render !`);
+    }
+    const currentInstance = renderingStack[renderingStack.length - 1];
+    if (currentInstance.type !== 'CHILD') {
+      throw new Error(`Current rendering instance is not of type CHILD`);
+    }
+    return currentInstance;
+  }
+
+  function getCurrentHook(): HooksData | null {
+    const instance = getCurrentRenderingChildInstance();
+    if (instance.hooks && instance.hooks.length > 0) {
+      return instance.hooks[instance.nextHooks.length] || null;
+    }
+    return null;
+  }
+
+  function getCurrentHookIndex(): number {
+    const instance = getCurrentRenderingChildInstance();
+    if (instance.hooks) {
+      return instance.hooks.length;
+    }
+    return 0;
+  }
+
+  function setCurrentHook(hook: HooksData) {
+    const instance = getCurrentRenderingChildInstance();
+    instance.nextHooks.push(hook);
+  }
 }
 
 /**
@@ -262,23 +352,6 @@ export function sameMapStructure(prev: Map<any, TreeElement>, children: Map<any,
   return allIn;
 }
 
-export function findProvider(
-  tree: TreeElement,
-  context: Context<any>
-): TreeElement<'PROVIDER'> | null {
-  let current: TreeElement | null = tree;
-  while (true) {
-    if (current === null) {
-      break;
-    }
-    if (current.type === 'PROVIDER' && current.element.type.context === context) {
-      break;
-    }
-    current = current.parent;
-  }
-  return current;
-}
-
 export function registerContextSub(instance: TreeElement<'CHILD'>, context: Context<any>) {
   const root = instance.root!;
   if (!root.context.has(context)) {
@@ -305,13 +378,82 @@ export function markContextSubDirty(instance: TreeElement, context: Context<any>
   if (ctx) {
     ctx.forEach(c => {
       if (isDescendantOf(c, instance)) {
-        markDirty(c, instance);
+        root.markDirty(c, instance);
       }
     });
   }
 }
 
-export function isDescendantOf(instance: TreeElement, parent: TreeElement) {
+export function isElementInstance(
+  instance: TreeElement
+): instance is TreeElement<'CHILD' | 'PROVIDER'> {
+  if (instance.type === 'CHILD' || instance.type === 'PROVIDER') {
+    return true;
+  }
+  return false;
+}
+
+export function getInstanceKey(instance: TreeElement): string | number | undefined {
+  return isElementInstance(instance) ? instance.element.key : undefined;
+}
+
+export function getPatchPath(instance: TreeElement): Array<TreeElementPath> {
+  let path: Array<TreeElementPath> = [];
+  let current: TreeElement | null = instance;
+  while (current !== null && current.type !== 'ROOT') {
+    path.unshift(current.path);
+    current = current.parent;
+  }
+  return path;
+}
+
+export function isPlainObject(o: any): o is object {
+  let ctor, prot;
+
+  if (isObjectObject(o) === false) return false;
+
+  // If has modified constructor
+  ctor = o.constructor;
+  if (typeof ctor !== 'function') return false;
+
+  // If has modified prototype
+  prot = ctor.prototype;
+  if (isObjectObject(prot) === false) return false;
+
+  // If constructor does not have an Object-specific method
+  if (prot.hasOwnProperty('isPrototypeOf') === false) {
+    return false;
+  }
+
+  // Most likely a plain Object
+  return true;
+}
+
+function isObject(val: any) {
+  return val != null && typeof val === 'object' && Array.isArray(val) === false;
+}
+
+function isObjectObject(o: any) {
+  return isObject(o) === true && Object.prototype.toString.call(o) === '[object Object]';
+}
+
+function arrayShallowEqual(deps1: ReadonlyArray<any>, deps2: ReadonlyArray<any>): boolean {
+  if (deps1 === deps2) {
+    return true;
+  }
+  if (deps1.length !== deps2.length) {
+    return false;
+  }
+  for (let i = 0; i < deps1.length; i++) {
+    const dep = deps1[i];
+    if (!Object.is(dep, deps2[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isDescendantOf(instance: TreeElement, parent: TreeElement) {
   let current: TreeElement | null = instance;
   while (current !== null && current !== parent) {
     current = current.parent;

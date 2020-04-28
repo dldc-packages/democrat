@@ -64,10 +64,15 @@ function runExample() {
   const render = () => {
     const state = store.getState();
     (window as any).state = state;
+    console.log('State:');
     console.log(state);
   };
 
   store.subscribe(render);
+  store.subscribePatches(patches => {
+    console.log('Patches:');
+    console.log(patches);
+  });
 
   render();
 

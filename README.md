@@ -84,7 +84,6 @@ React only supports `Array`, `string`, `number` and `booleans` in JSX.
 - `Array` (`[]`)
 - `Object` (`{}`)
 - `Map`
-- `Set`
 
 ```ts
 const Child = () => {
