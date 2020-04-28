@@ -285,6 +285,11 @@ export function useReducer<R extends Reducer<any, any>, I>(
   initializerArg: I,
   initializer: (arg: I) => ReducerState<R>
 ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
+export function useReducer<R extends Reducer<any, any>>(
+  reducer: R,
+  initialState: ReducerState<R>,
+  initializer?: undefined
+): [ReducerState<R>, Dispatch<ReducerAction<R>>];
 // implementation
 export function useReducer(reducer: any, initialArg: any, init?: any): [any, Dispatch<any>] {
   const root = getCurrentRootInstance();

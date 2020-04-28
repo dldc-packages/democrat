@@ -33,4 +33,12 @@ export {
   Patch,
   Patches,
   TreeElementPath,
+  Reducer,
+  ReducerAction,
+  DispatchWithoutAction,
+  ReducerState,
+  ReducerPatch,
+  StatePatch,
+  ReducerWithoutAction,
+  ReducerStateWithoutAction,
 } from './types';
