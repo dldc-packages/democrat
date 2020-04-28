@@ -6,7 +6,6 @@ import {
   AllOptional,
   Context,
   DemocratElement,
-  DemocratContextConsumer,
   DemocratContextProvider,
   ContextProviderProps,
   ResolveType,
@@ -49,7 +48,7 @@ export function createElement<P, T>(
   props?: Props<P>
 ): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' };
 export function createElement<P, T>(
-  component: Component<P, T> | DemocratContextProvider<P> | DemocratContextConsumer<P>,
+  component: Component<P, T> | DemocratContextProvider<P>,
   props: Props<P> = {} as any
 ): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' } {
   const key = props.key;
@@ -143,16 +142,16 @@ export function createContext<T>(defaultValue?: T): Context<T, boolean> {
       hasDefault: defaultValue !== undefined && arguments.length === 1,
       defaultValue: defaultValue as any, // force undefined when there a no default value
     },
-    Consumer: {
-      [DEMOCRAT_CONTEXT]: 'CONSUMER',
-      context: null as any,
-    },
+    // Consumer: {
+    //   [DEMOCRAT_CONTEXT]: 'CONSUMER',
+    //   context: null as any,
+    // },
     Provider: {
       [DEMOCRAT_CONTEXT]: 'PROVIDER',
       context: null as any,
     },
   };
-  context.Consumer.context = context;
+  // context.Consumer.context = context;
   context.Provider.context = context;
   return context;
 }

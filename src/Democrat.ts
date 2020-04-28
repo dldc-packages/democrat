@@ -40,6 +40,7 @@ import {
   ReducerHookData,
   ReducerPatch,
   StatePatch,
+  Snapshot,
 } from './types';
 import { DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 
@@ -62,6 +63,8 @@ export interface RenderOptions {
   ReactInstance?: null | any;
   // In passive mode, effect are never not executed
   passiveMode?: boolean;
+  // restore a snapshot
+  snapshot?: Snapshot;
 }
 
 export function render<C extends Children>(
@@ -69,6 +72,8 @@ export function render<C extends Children>(
   options: RenderOptions = {}
 ): Store<ResolveType<C>> {
   const { ReactInstance = null, passiveMode = false } = options;
+
+  // TODO: Handle snapshot
 
   const stateSub = Subscription.create();
   const patchesSub = Subscription.create<Patches>();
@@ -105,7 +110,12 @@ export function render<C extends Children>(
     destroy,
     subscribePatches: patchesSub.subscribe,
     applyPatches,
+    getSnapshot,
   };
+
+  function getSnapshot(): Snapshot {
+    return ChildrenUtils.snapshot<'ROOT'>(rootInstance);
+  }
 
   function doRender(): void {
     if (destroyed) {

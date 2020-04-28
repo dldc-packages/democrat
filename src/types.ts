@@ -39,6 +39,8 @@ export interface Store<S> {
   // patches
   subscribePatches: (onPatches: (patches: Patches) => void) => Unsubscribe;
   applyPatches: (patches: Patches) => void;
+  // snapshot
+  getSnapshot: () => Snapshot;
 }
 
 export type Key = string | number | undefined;
@@ -52,10 +54,10 @@ export interface DemocratContextProvider<P> {
 //   value: HasDefault extends true ? T : T | undefined
 // ) => C;
 
-export interface DemocratContextConsumer<P> {
-  [DEMOCRAT_CONTEXT]: 'CONSUMER';
-  context: Context<P>;
-}
+// export interface DemocratContextConsumer<P> {
+//   [DEMOCRAT_CONTEXT]: 'CONSUMER';
+//   context: Context<P>;
+// }
 
 export type ContextProviderProps<P, T> = Props<{
   value: P;
@@ -105,7 +107,7 @@ export interface Context<T, HasDefault extends boolean = boolean> {
     hasDefault: HasDefault;
     defaultValue: T;
   };
-  Consumer: DemocratContextConsumer<T>;
+  // Consumer: DemocratContextConsumer<T>;
   Provider: DemocratContextProvider<T>;
 }
 
@@ -278,8 +280,6 @@ export type TreeElementRaw = CreateTreeElementMap<{
   ARRAY: Array<any>;
   OBJECT: { [key: string]: any };
   MAP: Map<any, any>;
-  // CONSUMER: DemocratElementConsumer<any, any>;
-  // SET: Set<any>;
 }>;
 
 type TreeElementPathData = CreateTreeElementMap<{
@@ -289,11 +289,9 @@ type TreeElementPathData = CreateTreeElementMap<{
     hookIndex: number;
   };
   PROVIDER: {};
-  CONSUMER: {};
   ARRAY: { index: number };
   OBJECT: { objectKey: string };
   MAP: { mapKey: any };
-  // SET: { elementKey: any };
 }>;
 
 type TreeElementPathResolved = {
@@ -305,6 +303,40 @@ type TreeElementPathResolved = {
 export type TreeElementPath<
   K extends TreeElementType = TreeElementType
 > = TreeElementPathResolved[K];
+
+export type HookSnapshot =
+  | { type: 'CHILDREN'; child: TreeElementSnapshot }
+  | { type: 'STATE'; value: any }
+  | { type: 'REDUCER'; value: any }
+  | null;
+
+type TreeElementSnapshotData = CreateTreeElementMap<{
+  ROOT: {
+    children: TreeElementSnapshot;
+  };
+  NULL: {};
+  CHILD: {
+    hooks: Array<HookSnapshot>;
+  };
+  PROVIDER: {
+    children: TreeElementSnapshot;
+  };
+  ARRAY: { children: Array<TreeElementSnapshot> };
+  OBJECT: { children: { [key: string]: TreeElementSnapshot } };
+  MAP: { children: Map<any, TreeElementSnapshot> };
+}>;
+
+type TreeElementSnapshotResolved = {
+  [K in keyof TreeElementData]: {
+    type: K;
+  } & TreeElementSnapshotData[K];
+};
+
+export type TreeElementSnapshot<
+  K extends TreeElementType = TreeElementType
+> = TreeElementSnapshotResolved[K];
+
+export type Snapshot = TreeElementSnapshot<'ROOT'>;
 
 export type ReducerWithoutAction<S> = (prevState: S) => S;
 export type ReducerStateWithoutAction<

@@ -6,6 +6,8 @@ import {
   Context,
   TreeElementRaw,
   TreeElementPath,
+  TreeElementSnapshot,
+  HookSnapshot,
 } from './types';
 import {
   isValidElement,
@@ -34,6 +36,7 @@ export const ChildrenUtils = {
   layoutEffects,
   unmount,
   access,
+  snapshot,
 };
 
 const CHILDREN_LIFECYCLES: {
@@ -51,6 +54,7 @@ const CHILDREN_LIFECYCLES: {
     effect: (instance: TreeElement<K>, effecType: EffectType) => void;
     cleanup: (instance: TreeElement<K>, effecType: EffectType, force: boolean) => void;
     access: (instance: TreeElement<K>, path: TreeElementPath<K>) => TreeElement | null;
+    snapshot: (instance: TreeElement<K>) => TreeElementSnapshot<K>;
   };
 } = {
   ROOT: {
@@ -85,6 +89,12 @@ const CHILDREN_LIFECYCLES: {
     access: instance => {
       return instance.children;
     },
+    snapshot: instance => {
+      return {
+        type: 'ROOT',
+        children: snapshot(instance.children),
+      };
+    },
   },
   NULL: {
     mount: (_element, parent, path) => {
@@ -101,6 +111,9 @@ const CHILDREN_LIFECYCLES: {
     },
     access: () => {
       return null;
+    },
+    snapshot: () => {
+      return { type: 'NULL' };
     },
   },
   CHILD: {
@@ -170,6 +183,28 @@ const CHILDREN_LIFECYCLES: {
         return null;
       }
       return hook.tree;
+    },
+    snapshot: instance => {
+      return {
+        type: 'CHILD',
+        hooks:
+          instance.hooks === null
+            ? []
+            : instance.hooks.map(
+                (hook): HookSnapshot => {
+                  if (hook.type === 'CHILDREN') {
+                    return { type: 'CHILDREN', child: snapshot(hook.tree) };
+                  }
+                  if (hook.type === 'STATE') {
+                    return { type: 'STATE', value: hook.value };
+                  }
+                  if (hook.type === 'REDUCER') {
+                    return { type: 'REDUCER', value: hook.value };
+                  }
+                  return null;
+                }
+              ),
+      };
     },
   },
   ARRAY: {
@@ -253,6 +288,12 @@ const CHILDREN_LIFECYCLES: {
     },
     access: (instance, path) => {
       return instance.children[path.index] || null;
+    },
+    snapshot: instance => {
+      return {
+        type: 'ARRAY',
+        children: instance.children.map(item => snapshot(item)),
+      };
     },
   },
   OBJECT: {
@@ -346,6 +387,12 @@ const CHILDREN_LIFECYCLES: {
     access: (instance, path) => {
       return instance.children[path.objectKey] || null;
     },
+    snapshot: instance => {
+      return {
+        type: 'OBJECT',
+        children: mapObject(instance.children, item => snapshot(item)),
+      };
+    },
   },
   MAP: {
     mount: (element, parent, path) => {
@@ -428,6 +475,12 @@ const CHILDREN_LIFECYCLES: {
     access: (instance, path) => {
       return instance.children.get(path.mapKey) || null;
     },
+    snapshot: instance => {
+      return {
+        type: 'MAP',
+        children: mapMap(instance.children, item => snapshot(item)),
+      };
+    },
   },
   PROVIDER: {
     mount: (element, parent, path) => {
@@ -480,6 +533,9 @@ const CHILDREN_LIFECYCLES: {
     },
     access: instance => {
       return instance.children;
+    },
+    snapshot: instance => {
+      return { type: 'PROVIDER', children: snapshot(instance.children) };
     },
   },
   // SET: {
@@ -541,6 +597,10 @@ function access(instance: TreeElement, paths: Array<TreeElementPath>): TreeEleme
     }
     return CHILDREN_LIFECYCLES[acc.type].access(acc as any, path as any);
   }, instance);
+}
+
+function snapshot<T extends TreeElementType>(instance: TreeElement<T>): TreeElementSnapshot<T> {
+  return CHILDREN_LIFECYCLES[instance.type].snapshot(instance as any) as any;
 }
 
 function mount(element: any, parent: TreeElement, path: TreeElementPath): TreeElement {
