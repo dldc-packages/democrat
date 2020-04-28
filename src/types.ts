@@ -14,11 +14,21 @@ export type EffectType = 'EFFECT' | 'LAYOUT_EFFECT';
 
 type Unsubscribe = () => void;
 
-export interface Patch {
+export interface StatePatch {
   path: Array<TreeElementPath>;
+  type: 'STATE';
   hookIndex: number;
   value: any;
 }
+
+export interface ReducerPatch {
+  path: Array<TreeElementPath>;
+  type: 'REDUCER';
+  hookIndex: number;
+  action: any;
+}
+
+export type Patch = StatePatch | ReducerPatch;
 
 export type Patches = Array<Patch>;
 
@@ -124,6 +134,13 @@ export interface StateHookData {
   setValue: Dispatch<SetStateAction<any>>;
 }
 
+export interface ReducerHookData {
+  type: 'REDUCER';
+  value: any;
+  dispatch: Dispatch<ReducerAction<any>>;
+  reducer: Reducer<any, any>;
+}
+
 export interface ChildrenHookData {
   type: 'CHILDREN';
   tree: TreeElement;
@@ -166,6 +183,7 @@ export type ContextHookData = {
 
 export type HooksData =
   | StateHookData
+  | ReducerHookData
   | ChildrenHookData
   | EffectHookData
   | MemoHookData
@@ -288,13 +306,13 @@ export type TreeElementPath<
   K extends TreeElementType = TreeElementType
 > = TreeElementPathResolved[K];
 
-// export type ReducerWithoutAction<S> = (prevState: S) => S;
-// export type ReducerStateWithoutAction<
-//   R extends ReducerWithoutAction<any>
-// > = R extends ReducerWithoutAction<infer S> ? S : never;
-// export type DispatchWithoutAction = () => void;
-// export type Reducer<S, A> = (prevState: S, action: A) => S;
-// export type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;
-// export type ReducerAction<R extends Reducer<any, any>> = R extends Reducer<any, infer A>
-//   ? A
-//   : never;
+export type ReducerWithoutAction<S> = (prevState: S) => S;
+export type ReducerStateWithoutAction<
+  R extends ReducerWithoutAction<any>
+> = R extends ReducerWithoutAction<infer S> ? S : never;
+export type DispatchWithoutAction = () => void;
+export type Reducer<S, A> = (prevState: S, action: A) => S;
+export type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;
+export type ReducerAction<R extends Reducer<any, any>> = R extends Reducer<any, infer A>
+  ? A
+  : never;

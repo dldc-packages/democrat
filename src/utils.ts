@@ -267,6 +267,7 @@ export function createRootTreeElement(data: {
       reactHooksSupported = true;
       const methods = [
         'useState',
+        'useReducer',
         'useEffect',
         'useMemo',
         'useCallback',

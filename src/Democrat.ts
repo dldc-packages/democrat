@@ -31,6 +31,15 @@ import {
   TreeElementPath,
   Patch,
   Patches,
+  ReducerWithoutAction,
+  ReducerStateWithoutAction,
+  DispatchWithoutAction,
+  Reducer,
+  ReducerState,
+  ReducerAction,
+  ReducerHookData,
+  ReducerPatch,
+  StatePatch,
 } from './types';
 import { DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 
@@ -40,6 +49,7 @@ const Hooks = {
   // hooks
   useChildren,
   useState,
+  useReducer,
   useEffect,
   useMemo,
   useCallback,
@@ -200,12 +210,17 @@ export function render<C extends Children>(
           return;
         }
         const hook = instance.hooks[patch.hookIndex];
-        if (!hook || hook.type !== 'STATE') {
+        if (!hook || hook.type !== patch.type) {
           return;
         }
-        // Should we use setValue ? If yes we need to prevent from re-emitting the patch
+        // Should we use setValue / dispath ? If yes we need to prevent from re-emitting the patch
         // hook.setValue(patch.value)
-        hook.value = patch.value;
+        if (patch.type === 'STATE' && hook.type === 'STATE') {
+          hook.value = patch.value;
+        }
+        if (patch.type === 'REDUCER' && hook.type === 'REDUCER') {
+          hook.value = hook.reducer(hook.value, patch.action);
+        }
         rootInstance.markDirty(instance);
         instance.root.requestRender(null);
       });
@@ -244,57 +259,94 @@ export function useChildren<C extends Children>(children: C): ResolveType<C> {
   return hook.tree.value;
 }
 
-// // overload where dispatch could accept 0 arguments.
-// export function useReducer<R extends ReducerWithoutAction<any>, I>(
-//   reducer: R,
-//   initializerArg: I,
-//   initializer: (arg: I) => ReducerStateWithoutAction<R>
-// ): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
-// // overload where dispatch could accept 0 arguments.
-// export function useReducer<R extends ReducerWithoutAction<any>>(
-//   reducer: R,
-//   initializerArg: ReducerStateWithoutAction<R>,
-//   initializer?: undefined
-// ): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
-// // overload where "I" may be a subset of ReducerState<R>; used to provide autocompletion.
-// // If "I" matches ReducerState<R> exactly then the last overload will allow initializer to be ommitted.
-// // the last overload effectively behaves as if the identity function (x => x) is the initializer.
-// export function useReducer<R extends Reducer<any, any>, I>(
-//   reducer: R,
-//   initializerArg: I & ReducerState<R>,
-//   initializer: (arg: I & ReducerState<R>) => ReducerState<R>
-// ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
-// // overload for free "I"; all goes as long as initializer converts it into "ReducerState<R>".
-// export function useReducer<R extends Reducer<any, any>, I>(
-//   reducer: R,
-//   initializerArg: I,
-//   initializer: (arg: I) => ReducerState<R>
-// ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
-// // implementation
-// export function useReducer(
-//   reducer: any,
-//   initializerArg: any,
-//   initializer?: any
-// ): [any, Dispatch<any>] {
-//   return [] as any;
-// }
+// overload where dispatch could accept 0 arguments.
+export function useReducer<R extends ReducerWithoutAction<any>, I>(
+  reducer: R,
+  initializerArg: I,
+  initializer: (arg: I) => ReducerStateWithoutAction<R>
+): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
+// overload where dispatch could accept 0 arguments.
+export function useReducer<R extends ReducerWithoutAction<any>>(
+  reducer: R,
+  initializerArg: ReducerStateWithoutAction<R>,
+  initializer?: undefined
+): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
+// overload where "I" may be a subset of ReducerState<R>; used to provide autocompletion.
+// If "I" matches ReducerState<R> exactly then the last overload will allow initializer to be ommitted.
+// the last overload effectively behaves as if the identity function (x => x) is the initializer.
+export function useReducer<R extends Reducer<any, any>, I>(
+  reducer: R,
+  initializerArg: I & ReducerState<R>,
+  initializer: (arg: I & ReducerState<R>) => ReducerState<R>
+): [ReducerState<R>, Dispatch<ReducerAction<R>>];
+// overload for free "I"; all goes as long as initializer converts it into "ReducerState<R>".
+export function useReducer<R extends Reducer<any, any>, I>(
+  reducer: R,
+  initializerArg: I,
+  initializer: (arg: I) => ReducerState<R>
+): [ReducerState<R>, Dispatch<ReducerAction<R>>];
+// implementation
+export function useReducer(reducer: any, initialArg: any, init?: any): [any, Dispatch<any>] {
+  const root = getCurrentRootInstance();
+  const hook = root.getCurrentHook();
+  if (hook === null) {
+    const instance = root.getCurrentRenderingChildInstance();
+    let initialState;
+    if (init !== undefined) {
+      initialState = init(initialArg);
+    } else {
+      initialState = initialArg;
+    }
+    const hookIndex = root.getCurrentHookIndex();
+    const value = initialState;
+    const dispatch: Dispatch<any> = action => {
+      if (instance.state === 'removed') {
+        throw new Error(`Cannot dispatch on an unmounted component`);
+      }
+      instance.root.onIdle(() => {
+        const nextValue = reducerHook.reducer(reducerHook.value, action);
+        if (nextValue !== reducerHook.value) {
+          const patch: ReducerPatch = {
+            path: getPatchPath(instance),
+            type: 'REDUCER',
+            hookIndex,
+            action,
+          };
+          reducerHook.value = nextValue;
+          root.markDirty(instance);
+          instance.root.requestRender(patch);
+        }
+      });
+    };
+    const reducerHook: ReducerHookData = { type: 'REDUCER', value, dispatch, reducer };
+    root.setCurrentHook(reducerHook);
+    return [value, dispatch];
+  }
+  if (hook.type !== 'REDUCER') {
+    throw new Error('Invalid Hook type');
+  }
+  hook.reducer = reducer;
+  root.setCurrentHook(hook);
+  return [hook.value, hook.dispatch];
+}
 
 export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateAction<S>>] {
   const root = getCurrentRootInstance();
   const hook = root.getCurrentHook();
-  const instance = root.getCurrentRenderingChildInstance();
   if (hook === null) {
+    const instance = root.getCurrentRenderingChildInstance();
     const hookIndex = root.getCurrentHookIndex();
     const value = typeof initialState === 'function' ? (initialState as any)() : initialState;
     const setValue: Dispatch<SetStateAction<S>> = value => {
       if (instance.state === 'removed') {
-        throw new Error(`Cannot set state of un unmounted component`);
+        throw new Error(`Cannot set state of an unmounted component`);
       }
       instance.root.onIdle(() => {
         const nextValue = typeof value === 'function' ? (value as any)(stateHook.value) : value;
         if (nextValue !== stateHook.value) {
-          const patch: Patch = {
+          const patch: StatePatch = {
             path: getPatchPath(instance),
+            type: 'STATE',
             hookIndex,
             value: nextValue,
           };
