@@ -720,7 +720,7 @@ test('render a Map', () => {
   expect(() => Democrat.render(new Map())).not.toThrow();
 });
 
-test.only('update a Map', async () => {
+test('update a Map', async () => {
   function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): Map<K, U> {
     const result = new Map<K, U>();
     source.forEach((v, k) => {
