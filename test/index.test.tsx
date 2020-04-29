@@ -1,5 +1,5 @@
 import * as Democrat from '../src';
-import { waitForNextState, waitForNextTick } from './utils';
+import { waitForNextState, waitForNextTick, mapMap, removeFunctionsDeep } from './utils';
 
 test('basic count state', async () => {
   const onRender = jest.fn();
@@ -721,14 +721,6 @@ test('render a Map', () => {
 });
 
 test('update a Map', async () => {
-  function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): Map<K, U> {
-    const result = new Map<K, U>();
-    source.forEach((v, k) => {
-      result.set(k, mapper(v, k));
-    });
-    return result;
-  }
-
   const Child = () => {
     const [count, setCount] = Democrat.useState(0);
 
@@ -790,4 +782,86 @@ test('update a Map', async () => {
     .setCount(42);
   await waitForNextTick();
   expect(store.getState().children.get('b')!.count).toBe(42);
+});
+
+test('can save and restore unsing snapshot', async () => {
+  const Child = () => {
+    const [count, setCount] = Democrat.useState(0);
+
+    return Democrat.useMemo(
+      () => ({
+        count,
+        setCount,
+      }),
+      [count, setCount]
+    );
+  };
+
+  const Store = () => {
+    const [ids, setIds] = Democrat.useState<Map<string, null>>(new Map());
+
+    const children = Democrat.useChildren(mapMap(ids, () => Democrat.createElement(Child)));
+
+    const addChild = Democrat.useCallback((id: string) => {
+      setIds(prev => {
+        const next = mapMap(prev, v => v);
+        next.set(id, null);
+        return next;
+      });
+    }, []);
+
+    const removeChild = Democrat.useCallback((id: string) => {
+      setIds(prev => {
+        const next = mapMap(prev, v => v);
+        next.delete(id);
+        return next;
+      });
+    }, []);
+
+    const sum = Democrat.useMemo(() => {
+      return Array.from(children.values()).reduce((acc, item) => acc + item.count, 0);
+    }, [children]);
+
+    return Democrat.useMemo(
+      () => ({
+        children,
+        removeChild,
+        addChild,
+        sum,
+      }),
+      [children, removeChild, addChild]
+    );
+  };
+
+  const store = Democrat.render(Democrat.createElement(Store));
+  store.getState().addChild('a');
+  await waitForNextTick();
+  store.getState().addChild('b');
+  await waitForNextTick();
+  store
+    .getState()
+    .children.get('b')!
+    .setCount(42);
+  await waitForNextTick();
+  const finalState = removeFunctionsDeep(store.getState());
+  expect(finalState).toMatchInlineSnapshot(`
+    Object {
+      "addChild": "REMOVED_FUNCTION",
+      "children": Map {
+        "a" => Object {
+          "count": 0,
+          "setCount": "REMOVED_FUNCTION",
+        },
+        "b" => Object {
+          "count": 42,
+          "setCount": "REMOVED_FUNCTION",
+        },
+      },
+      "removeChild": "REMOVED_FUNCTION",
+      "sum": 42,
+    }
+  `);
+  const snapshot = store.getSnapshot();
+  const restoreStore = Democrat.render(Democrat.createElement(Store), { snapshot });
+  expect(removeFunctionsDeep(restoreStore.getState())).toEqual(finalState);
 });

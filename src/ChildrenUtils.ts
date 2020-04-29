@@ -44,7 +44,8 @@ const CHILDREN_LIFECYCLES: {
     mount: (
       element: TreeElementRaw[K],
       parent: TreeElement,
-      path: TreeElementPath
+      path: TreeElementPath,
+      snapshot: TreeElementSnapshot<K> | undefined
     ) => TreeElement<K>;
     update: (
       instance: TreeElement<K>,
@@ -58,13 +59,13 @@ const CHILDREN_LIFECYCLES: {
   };
 } = {
   ROOT: {
-    mount: (element, parent) => {
+    mount: (element, parent, _path, snapshot) => {
       // when we mount root, parent is the root instance itself
       if (parent.type !== 'ROOT') {
         throw new Error(`Unexpected ROOT !`);
       }
       const children = parent.withGlobalRenderingInstance(parent, () => {
-        return mount(element.children, parent, { type: 'ROOT' });
+        return mount(element.children, parent, { type: 'ROOT' }, snapshot?.children);
       });
       parent.mounted = true;
       parent.value = children.value;
@@ -117,18 +118,21 @@ const CHILDREN_LIFECYCLES: {
     },
   },
   CHILD: {
-    mount: (element, parent, path) => {
+    mount: (element, parent, path, snapshot) => {
       const tree = createTreeElement('CHILD', parent, path, {
+        snapshot,
         element: element,
         value: null,
         previous: null,
         dirty: false,
-        hooks: null,
+        hooks: [],
         nextHooks: [],
       });
       tree.value = tree.root.withGlobalRenderingInstance(tree, () => {
         return renderElement(element, tree);
       });
+      // once mounted, remove snapshot
+      tree.snapshot = undefined;
       return tree;
     },
     update: (tree, element) => {
@@ -208,14 +212,17 @@ const CHILDREN_LIFECYCLES: {
     },
   },
   ARRAY: {
-    mount: (element, parent, path) => {
+    mount: (element, parent, path, snapshot) => {
       const tree = createTreeElement('ARRAY', parent, path, {
         children: [],
         value: null,
         previous: null,
       });
       tree.children = tree.root.withGlobalRenderingInstance(tree, () => {
-        return element.map((item, index) => mount(item, tree, { type: 'ARRAY', index }));
+        return element.map((item, index) => {
+          const snap = snapshot?.children[index];
+          return mount(item, tree, { type: 'ARRAY', index }, snap);
+        });
       });
       tree.value = tree.children.map(item => item.value);
       return tree;
@@ -260,7 +267,7 @@ const CHILDREN_LIFECYCLES: {
             key === undefined ? index : prevKeys.indexOf(key) >= 0 ? prevKeys.indexOf(key) : index;
           const prev = tree.children[prevIndex];
           if (!prev) {
-            return mount(item, nextTree, { type: 'ARRAY', index });
+            return mount(item, nextTree, { type: 'ARRAY', index }, undefined);
           }
           return update(prev, item, nextTree, { type: 'ARRAY', index });
         });
@@ -297,7 +304,7 @@ const CHILDREN_LIFECYCLES: {
     },
   },
   OBJECT: {
-    mount: (element, parent, path) => {
+    mount: (element, parent, path, snapshot) => {
       const tree = createTreeElement('OBJECT', parent, path, {
         children: {},
         value: null,
@@ -305,7 +312,8 @@ const CHILDREN_LIFECYCLES: {
       });
       tree.children = tree.root.withGlobalRenderingInstance(tree, () =>
         mapObject(element, (item, key) => {
-          return mount(item, tree, { type: 'OBJECT', objectKey: key });
+          const snap = snapshot?.children[key];
+          return mount(item, tree, { type: 'OBJECT', objectKey: key }, snap);
         })
       );
       tree.value = mapObject(tree.children, v => v.value);
@@ -353,7 +361,12 @@ const CHILDREN_LIFECYCLES: {
           }
           if (!prev && next) {
             // key added
-            nextTree.children[key] = mount(next, nextTree, { type: 'OBJECT', objectKey: key });
+            nextTree.children[key] = mount(
+              next,
+              nextTree,
+              { type: 'OBJECT', objectKey: key },
+              undefined
+            );
             return;
           }
           // key updated
@@ -395,8 +408,11 @@ const CHILDREN_LIFECYCLES: {
     },
   },
   MAP: {
-    mount: (element, parent, path) => {
-      const children = mapMap(element, (v, key) => mount(v, parent, { type: 'MAP', mapKey: key }));
+    mount: (element, parent, path, snapshot) => {
+      const children = mapMap(element, (v, key) => {
+        const snap = snapshot?.children.get(key);
+        return mount(v, parent, { type: 'MAP', mapKey: key }, snap);
+      });
       const item = createTreeElement('MAP', parent, path, {
         value: mapMap(children, item => item.value),
         children,
@@ -442,7 +458,10 @@ const CHILDREN_LIFECYCLES: {
         }
         if (!prev && next) {
           // key added
-          nextTree.children.set(key, mount(next, nextTree, { type: 'MAP', mapKey: key }));
+          nextTree.children.set(
+            key,
+            mount(next, nextTree, { type: 'MAP', mapKey: key }, undefined)
+          );
           return;
         }
         if (prev && next) {
@@ -485,7 +504,7 @@ const CHILDREN_LIFECYCLES: {
     },
   },
   PROVIDER: {
-    mount: (element, parent, path) => {
+    mount: (element, parent, path, snapshot) => {
       const tree = createTreeElement('PROVIDER', parent, path, {
         value: null,
         previous: null,
@@ -493,7 +512,7 @@ const CHILDREN_LIFECYCLES: {
         children: null as any,
       });
       tree.children = tree.root.withGlobalRenderingInstance(tree, () => {
-        return mount(element.props.children, tree, { type: 'PROVIDER' });
+        return mount(element.props.children, tree, { type: 'PROVIDER' }, snapshot?.children);
       });
       tree.value = tree.children.value;
       return tree;
@@ -605,8 +624,18 @@ function snapshot<T extends TreeElementType>(instance: TreeElement<T>): TreeElem
   return CHILDREN_LIFECYCLES[instance.type].snapshot(instance as any) as any;
 }
 
-function mount(element: any, parent: TreeElement, path: TreeElementPath): TreeElement {
-  return CHILDREN_LIFECYCLES[getChildrenType(element)].mount(element as never, parent, path);
+function mount(
+  element: any,
+  parent: TreeElement,
+  path: TreeElementPath,
+  snapshot: TreeElementSnapshot | undefined
+): TreeElement {
+  return CHILDREN_LIFECYCLES[getChildrenType(element)].mount(
+    element as never,
+    parent,
+    path,
+    snapshot as any
+  );
 }
 
 /**
@@ -646,7 +675,7 @@ function update(
 
   if (shouldUnmoutRemount) {
     // we mount the new children and flag the old one as removed
-    const nextTree = mount(element, parent!, path);
+    const nextTree = mount(element, parent!, path, undefined);
     instance.state = 'removed';
     nextTree.previous = instance;
     return nextTree;

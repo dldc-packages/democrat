@@ -313,8 +313,8 @@ export function createRootTreeElement(data: {
 
   function getCurrentHookIndex(): number {
     const instance = getCurrentRenderingChildInstance();
-    if (instance.hooks) {
-      return instance.hooks.length;
+    if (instance.nextHooks) {
+      return instance.nextHooks.length;
     }
     return 0;
   }

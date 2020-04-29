@@ -71,9 +71,7 @@ export function render<C extends Children>(
   rootChildren: C,
   options: RenderOptions = {}
 ): Store<ResolveType<C>> {
-  const { ReactInstance = null, passiveMode = false } = options;
-
-  // TODO: Handle snapshot
+  const { ReactInstance = null, passiveMode = false, snapshot } = options;
 
   const stateSub = Subscription.create();
   const patchesSub = Subscription.create<Patches>();
@@ -123,7 +121,7 @@ export function render<C extends Children>(
     }
     setCurrentRootInstance(rootInstance);
     if (rootInstance.mounted === false) {
-      rootInstance = ChildrenUtils.mount(rootElem, rootInstance, null as any) as any;
+      rootInstance = ChildrenUtils.mount(rootElem, rootInstance, null as any, snapshot) as any;
     } else {
       rootInstance = ChildrenUtils.update(rootInstance, rootElem, null as any, null as any) as any;
     }
@@ -249,11 +247,14 @@ export function render<C extends Children>(
 export function useChildren<C extends Children>(children: C): ResolveType<C> {
   const root = getCurrentRootInstance();
   const hook = root.getCurrentHook();
+
   if (hook === null) {
     const instance = root.getCurrentRenderingChildInstance();
     const hookIndex = root.getCurrentHookIndex();
+    const snapshot = instance.snapshot?.hooks[hookIndex];
+    const snap = snapshot && snapshot.type === 'CHILDREN' ? snapshot.child : undefined;
     const path: TreeElementPath<'CHILD'> = { type: 'CHILD', hookIndex };
-    const childrenTree = ChildrenUtils.mount(children, instance, path);
+    const childrenTree = ChildrenUtils.mount(children, instance, path, snap);
     root.setCurrentHook({
       type: 'CHILDREN',
       tree: childrenTree,
@@ -313,6 +314,10 @@ export function useReducer(reducer: any, initialArg: any, init?: any): [any, Dis
       initialState = initialArg;
     }
     const hookIndex = root.getCurrentHookIndex();
+    const snapshot = instance.snapshot?.hooks[hookIndex];
+    if (snapshot && snapshot.type === 'REDUCER') {
+      initialState = snapshot.value;
+    }
     const value = initialState;
     const dispatch: Dispatch<any> = action => {
       if (instance.state === 'removed') {
@@ -351,7 +356,11 @@ export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateA
   if (hook === null) {
     const instance = root.getCurrentRenderingChildInstance();
     const hookIndex = root.getCurrentHookIndex();
-    const value = typeof initialState === 'function' ? (initialState as any)() : initialState;
+    let value = typeof initialState === 'function' ? (initialState as any)() : initialState;
+    const snapshot = instance.snapshot?.hooks[hookIndex];
+    if (snapshot && snapshot.type === 'STATE') {
+      value = snapshot.value;
+    }
     const setValue: Dispatch<SetStateAction<S>> = value => {
       if (instance.state === 'removed') {
         throw new Error(`Cannot set state of an unmounted component`);

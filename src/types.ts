@@ -240,6 +240,7 @@ export type TreeElementData = {
     children: TreeElement;
   };
   CHILD: {
+    snapshot: TreeElementSnapshot<'CHILD'> | undefined;
     element: DemocratElementComponent<any, any>;
     hooks: Array<HooksData> | null;
     nextHooks: Array<HooksData>;
