@@ -9,9 +9,9 @@
 Democrat is a library that mimic the API of React (Components, hooks, Context...) but instead of producing DOM mutation it produces a state tree.
 You can then use this state tree as global state management system (like redux or mobx).
 
-## ⚠️⚠️ NOT VERY WELL TESTED ⚠️⚠️
+## Project Status
 
-This project is not very well tested yet and should not be considered stable !
+This project is still quite experimental and should not be considered stable !
 
 ## Install
 
@@ -24,18 +24,23 @@ npm install democrat
 ```ts
 import * as Democrat from 'democrat';
 
+// Create a Democrat "component"
 const MainStore = () => {
+  // all your familair hooks are here
   const [count, setCount] = Democrat.useState(0);
 
   const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
 
+  // return your state at the end
   return {
     count,
     increment,
   };
 };
 
+// Render your component
 const store = Democrat.render(Democrat.createElement(Store));
+// subscribe to state update
 store.subscribe(render);
 render();
 
@@ -72,7 +77,7 @@ const Parent = () => {
   const childData = Democrat.useChildren(Democrat.createElement(Child));
   // childData = { some: 'data' }
   //...
-  return {};
+  return { children: childData };
 };
 ```
 
@@ -105,18 +110,19 @@ const Parent = () => {
 ## Using hooks library
 
 Because Democrat's hooks works just like React's ones with a little trick you can use some of the React hook in Democrat.
-All you need to do is add this code before the first `Democrat.render`.
+All you need to do is pass an instance of `React` to the `Democrat.render` options.
 
 ```js
 import React from 'react';
-import { supportReactHooks } from 'democrat';
+import { render } from 'democrat';
 
-supportReactHooks(React);
+render(/*...*/, { ReactInstance: React });
 ```
 
 For now only the following hooks are supported:
 
 - `useState`
+- `useReducer`
 - `useEffect`
 - `useMemo`
 - `useCallback`
