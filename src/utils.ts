@@ -402,6 +402,9 @@ export function getPatchPath(instance: TreeElement): Array<TreeElementPath> {
   let current: TreeElement | null = instance;
   while (current !== null && current.type !== 'ROOT') {
     path.unshift(current.path);
+    if (current.parent === undefined) {
+      console.log(current);
+    }
     current = current.parent;
   }
   return path;

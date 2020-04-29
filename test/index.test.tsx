@@ -719,3 +719,75 @@ test('throw when render a Set', () => {
 test('render a Map', () => {
   expect(() => Democrat.render(new Map())).not.toThrow();
 });
+
+test.only('update a Map', async () => {
+  function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): Map<K, U> {
+    const result = new Map<K, U>();
+    source.forEach((v, k) => {
+      result.set(k, mapper(v, k));
+    });
+    return result;
+  }
+
+  const Child = () => {
+    const [count, setCount] = Democrat.useState(0);
+
+    return Democrat.useMemo(
+      () => ({
+        count,
+        setCount,
+      }),
+      [count, setCount]
+    );
+  };
+
+  const Store = () => {
+    const [ids, setIds] = Democrat.useState<Map<string, null>>(new Map());
+
+    const children = Democrat.useChildren(mapMap(ids, () => Democrat.createElement(Child)));
+
+    const addChild = Democrat.useCallback((id: string) => {
+      setIds(prev => {
+        const next = mapMap(prev, v => v);
+        next.set(id, null);
+        return next;
+      });
+    }, []);
+
+    const removeChild = Democrat.useCallback((id: string) => {
+      setIds(prev => {
+        const next = mapMap(prev, v => v);
+        next.delete(id);
+        return next;
+      });
+    }, []);
+
+    return Democrat.useMemo(
+      () => ({
+        children,
+        removeChild,
+        addChild,
+      }),
+      [children, removeChild, addChild]
+    );
+  };
+
+  const store = Democrat.render(Democrat.createElement(Store));
+  expect(store.getState().children).toBeInstanceOf(Map);
+  expect(store.getState().children.size).toBe(0);
+  store.getState().addChild('a');
+  await waitForNextTick();
+  expect(store.getState().children.size).toBe(1);
+  store.getState().addChild('b');
+  await waitForNextTick();
+  expect(store.getState().children.size).toBe(2);
+  store.getState().removeChild('a');
+  await waitForNextTick();
+  expect(store.getState().children.size).toBe(1);
+  store
+    .getState()
+    .children.get('b')!
+    .setCount(42);
+  await waitForNextTick();
+  expect(store.getState().children.get('b')!.count).toBe(42);
+});

@@ -409,7 +409,10 @@ const CHILDREN_LIFECYCLES: {
       if (sameStructure) {
         let updated = false;
         tree.children = mapMap(element, (child, key) => {
-          const newItem = update(child, child, tree, { type: 'MAP', mapKey: key });
+          const newItem = update(tree.children.get(key)!, child, tree, {
+            type: 'MAP',
+            mapKey: key,
+          });
           if (updated === false && newItem.state !== 'stable') {
             updated = true;
           }
@@ -423,8 +426,12 @@ const CHILDREN_LIFECYCLES: {
         return tree;
       }
       // keys have changed
+      const nextTree = createTreeElement('MAP', tree.parent!, path, {
+        children: new Map<any, TreeElement>(),
+        value: null,
+        previous: tree,
+      });
       const allKeys = new Set([...Array.from(element.keys()), ...Array.from(tree.children.keys())]);
-      const children = new Map<any, TreeElement>();
       allKeys.forEach(key => {
         const prev = tree.children.get(key);
         const next = element.get(key);
@@ -435,25 +442,20 @@ const CHILDREN_LIFECYCLES: {
         }
         if (!prev && next) {
           // key added
-          children.set(key, mount(next, tree, { type: 'MAP', mapKey: key }));
+          nextTree.children.set(key, mount(next, nextTree, { type: 'MAP', mapKey: key }));
           return;
         }
         if (prev && next) {
           // key updated
           const updated = update(prev, next, nextTree, { type: 'MAP', mapKey: key });
-          children.set(key, updated);
+          nextTree.children.set(key, updated);
           if (updated !== prev) {
             prev.state = 'removed';
           }
         }
       });
-      const value = mapMap(tree.children, v => v.value);
+      nextTree.value = mapMap(nextTree.children, v => v.value);
       tree.state = 'updated';
-      const nextTree = createTreeElement('MAP', tree.parent!, path, {
-        children,
-        value,
-        previous: tree,
-      });
       return nextTree;
     },
     effect: (tree, type) => {
@@ -461,15 +463,15 @@ const CHILDREN_LIFECYCLES: {
         effectInternal(item, type);
       });
     },
-    cleanup: (tree, type, force) => {
+    cleanup: (tree, effectType, force) => {
       if (force === true || tree.state === 'removed') {
         tree.children.forEach(item => {
-          cleanup(item, type, true);
+          cleanup(item, effectType, true);
         });
         return;
       }
       tree.children.forEach(item => {
-        cleanup(item, type, false);
+        cleanup(item, effectType, false);
       });
     },
     access: (instance, path) => {
@@ -643,7 +645,7 @@ function update(
   })();
 
   if (shouldUnmoutRemount) {
-    // we mount the mew children and flag the old one as removed
+    // we mount the new children and flag the old one as removed
     const nextTree = mount(element, parent!, path);
     instance.state = 'removed';
     nextTree.previous = instance;
