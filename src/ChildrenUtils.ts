@@ -624,7 +624,6 @@ function update(
   })();
 
   if (shouldUnmoutRemount) {
-    console.log('shouldUnmoutRemount');
     // we mount the new children and flag the old one as removed
     const nextTree = mount(element, parent!, path, undefined);
     instance.state = 'removed';

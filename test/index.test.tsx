@@ -11,7 +11,7 @@ test('basic count state', async () => {
       setCount,
     };
   };
-  const store = Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.createStore(Democrat.createElement(Counter));
   expect(store.getState().count).toEqual(0);
   await waitForNextTick();
   store.getState().setCount(42);
@@ -31,7 +31,7 @@ test('subscribe', async () => {
       setCount,
     };
   };
-  const store = Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.createStore(Democrat.createElement(Counter));
   const onState = jest.fn();
   store.subscribe(onState);
   store.getState().setCount(42);
@@ -57,7 +57,7 @@ test('subscribe wit useMemo', async () => {
 
     return result;
   };
-  const store = Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.createStore(Democrat.createElement(Counter));
   const onState = jest.fn();
   store.subscribe(onState);
   store.getState().setCount(42);
@@ -84,7 +84,7 @@ test('set two states', async () => {
       setCount,
     };
   };
-  const store = Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.createStore(Democrat.createElement(Counter));
   expect(store.getState().count).toEqual(0);
   store.getState().setCount(1);
   await waitForNextState(store);
@@ -112,7 +112,7 @@ test('effects runs', async () => {
       setCount,
     };
   };
-  Democrat.render(Democrat.createElement(Counter));
+  Democrat.createStore(Democrat.createElement(Counter));
   await waitForNextTick();
   expect(onLayoutEffect).toHaveBeenCalled();
   expect(onEffect).toHaveBeenCalled();
@@ -142,7 +142,7 @@ test('effects cleanup runs', async () => {
       setCount,
     };
   };
-  const store = Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.createStore(Democrat.createElement(Counter));
   await waitForNextTick();
   expect(onLayoutEffect).toBeCalledTimes(1);
   expect(onEffect).toBeCalledTimes(1);
@@ -177,7 +177,7 @@ test('runs cleanup only once', async () => {
       setCount,
     };
   };
-  const store = Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.createStore(Democrat.createElement(Counter));
   await waitForNextTick();
   expect(onLayoutEffectCleanup).not.toHaveBeenCalled();
   expect(onLayoutEffect).toBeCalledTimes(1);
@@ -211,7 +211,7 @@ test('use effect when re-render', async () => {
     };
   };
 
-  const store = Democrat.render(Democrat.createElement(Counter));
+  const store = Democrat.createStore(Democrat.createElement(Counter));
   await waitForNextState(store);
   expect(onUseEffect).toHaveBeenCalledTimes(1);
   expect(store.getState().count).toBe(42);
@@ -244,7 +244,7 @@ test('multiple counters (array children)', async () => {
     };
   };
 
-  const store = Democrat.render(Democrat.createElement(Counters));
+  const store = Democrat.createStore(Democrat.createElement(Counters));
   expect(store.getState()).toMatchInlineSnapshot(`
     Object {
       "addCounter": [Function],
@@ -295,7 +295,7 @@ test('multiple counters (object children)', () => {
     return { counters, sum };
   };
 
-  const store = Democrat.render(Democrat.createElement(Counters));
+  const store = Democrat.createStore(Democrat.createElement(Counters));
   expect(store.getState()).toMatchInlineSnapshot(`
     Object {
       "counters": Object {
@@ -325,7 +325,7 @@ test('render a context', async () => {
       setCount,
     };
   };
-  const store = Democrat.render(
+  const store = Democrat.createStore(
     Democrat.createElement(NumCtx.Provider, {
       value: 42,
       children: Democrat.createElement(Store),
@@ -367,7 +367,7 @@ test('render a context and update it', async () => {
     };
   };
 
-  const store = Democrat.render(Democrat.createElement(Parent));
+  const store = Democrat.createStore(Democrat.createElement(Parent));
   expect(store.getState().count).toEqual(0);
   store.getState().setCount(1);
   await waitForNextState(store);
@@ -389,7 +389,7 @@ test('read a context with no provider', async () => {
       setCount,
     };
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   expect(store.getState().count).toEqual(10);
 });
 
@@ -411,7 +411,7 @@ test('conditionnaly use a children', async () => {
       [setShow, child]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   expect(store.getState().child).toEqual(null);
   store.getState().setShow(true);
   await waitForNextState(store);
@@ -442,7 +442,7 @@ test('render a children', async () => {
       [count, setCount, child]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   expect(store.getState().child.count).toEqual(0);
   store.getState().child.setCount(42);
   await waitForNextState(store);
@@ -473,7 +473,7 @@ test('subscribe when children change', async () => {
       [count, setCount, child]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   const onState = jest.fn();
   store.subscribe(onState);
   store.getState().child.setCount(42);
@@ -502,7 +502,7 @@ test('useLayoutEffect', async () => {
       [count, setCount]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   const onState = jest.fn();
   store.subscribe(onState);
   store.getState().setCount(42);
@@ -529,7 +529,7 @@ test('useEffect in loop', async () => {
       [count, setCount]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   const onState = jest.fn();
   store.subscribe(() => {
     onState(store.getState().count);
@@ -562,7 +562,7 @@ test('useLayoutEffect in loop', async () => {
       [count, setCount]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   const onState = jest.fn();
   store.subscribe(onState);
   store.getState().setCount(3);
@@ -595,7 +595,7 @@ test('useLayoutEffect & useEffect in loop (should run useEffect sync)', async ()
       [count, setCount]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   const onState = jest.fn();
   store.subscribe(onState);
   store.getState().setCount(3);
@@ -626,7 +626,7 @@ test('array of children', async () => {
       [addItem, child]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   expect(store.getState().child).toEqual([46, 10, 14]);
   store.getState().addItem(6);
   await waitForNextState(store);
@@ -657,7 +657,7 @@ test('array of children with keys', async () => {
       [addItem, child]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   expect(store.getState().child).toEqual([46, 10, 14]);
   store.getState().addItem(6);
   await waitForNextState(store);
@@ -687,7 +687,7 @@ test('remove key of array child', async () => {
       [setWithKey, child]
     );
   };
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   const out1 = store.getState().child[0];
   await waitForNextTick();
   store.getState().setWithKey(false);
@@ -702,22 +702,25 @@ test('render an array as root', () => {
     return 42;
   };
   expect(() =>
-    Democrat.render([Democrat.createElement(Child), Democrat.createElement(Child)])
+    Democrat.createStore([Democrat.createElement(Child), Democrat.createElement(Child)])
   ).not.toThrow();
-  const store = Democrat.render([Democrat.createElement(Child), Democrat.createElement(Child)]);
+  const store = Democrat.createStore([
+    Democrat.createElement(Child),
+    Democrat.createElement(Child),
+  ]);
   expect(store.getState()).toEqual([42, 42]);
 });
 
 test('throw when render invalid element', () => {
-  expect(() => Democrat.render(new Date() as any)).toThrow('Invalid children type');
+  expect(() => Democrat.createStore(new Date() as any)).toThrow('Invalid children type');
 });
 
 test('throw when render a Set', () => {
-  expect(() => Democrat.render(new Set() as any)).toThrow('Set are not supported');
+  expect(() => Democrat.createStore(new Set() as any)).toThrow('Set are not supported');
 });
 
 test('render a Map', () => {
-  expect(() => Democrat.render(new Map())).not.toThrow();
+  expect(() => Democrat.createStore(new Map())).not.toThrow();
 });
 
 test('update a Map', async () => {
@@ -764,7 +767,7 @@ test('update a Map', async () => {
     );
   };
 
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   expect(store.getState().children).toBeInstanceOf(Map);
   expect(store.getState().children.size).toBe(0);
   store.getState().addChild('a');
@@ -833,7 +836,7 @@ test('can save and restore unsing snapshot', async () => {
     );
   };
 
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
   store.getState().addChild('a');
   await waitForNextTick();
   store.getState().addChild('b');
@@ -862,6 +865,97 @@ test('can save and restore unsing snapshot', async () => {
     }
   `);
   const snapshot = store.getSnapshot();
-  const restoreStore = Democrat.render(Democrat.createElement(Store), { snapshot });
+  const restoreStore = Democrat.createStore(Democrat.createElement(Store), { snapshot });
   expect(removeFunctionsDeep(restoreStore.getState())).toEqual(finalState);
+});
+
+test('passing a React instance', () => {
+  const useState = jest.fn((initialState: any) => [initialState]);
+  const NotReact = {
+    useState,
+  };
+
+  const Store = () => {
+    const [state] = NotReact.useState(42);
+    return state;
+  };
+
+  Store();
+  expect(useState).toHaveBeenCalledTimes(1);
+
+  const store = Democrat.createStore(Democrat.createElement(Store), { ReactInstance: NotReact });
+  expect(store.getState()).toEqual(42);
+  expect(useState).toHaveBeenCalledTimes(1);
+  Store();
+  expect(useState).toHaveBeenCalledTimes(2);
+});
+
+test(`effects don't run in passive mode`, async () => {
+  const onEffect = jest.fn();
+
+  const Store = () => {
+    Democrat.useEffect(() => {
+      onEffect();
+    }, []);
+
+    return null;
+  };
+
+  Democrat.createStore(Democrat.createElement(Store));
+  await waitForNextTick();
+  expect(onEffect).toHaveBeenCalledTimes(1);
+
+  Democrat.createStore(Democrat.createElement(Store), { passiveMode: true });
+  await waitForNextTick();
+  expect(onEffect).toHaveBeenCalledTimes(1); // still one, effect not called
+});
+
+test('update root element with store.render', async () => {
+  const Store = ({ num }: { num: number }) => {
+    const [count, setCount] = Democrat.useState(0);
+
+    return {
+      count: count + num,
+      setCount,
+    };
+  };
+
+  const store = Democrat.createStore(Democrat.createElement(Store, { num: 3 }));
+  expect(store.getState().count).toBe(3);
+  store.getState().setCount(5);
+  await waitForNextState(store);
+  expect(store.getState().count).toBe(8);
+  store.render(Democrat.createElement(Store, { num: 10 }));
+  await waitForNextState(store);
+  expect(store.getState().count).toBe(15);
+});
+
+test('cannot set state on a destroyed store', async () => {
+  const Store = () => {
+    const [count, setCount] = Democrat.useState(42);
+    return {
+      count: count,
+      setCount,
+    };
+  };
+  const store = Democrat.createStore(Democrat.createElement(Store));
+  expect(store.getState().count).toBe(42);
+  store.getState().setCount(8);
+  await waitForNextState(store);
+  expect(store.getState().count).toBe(8);
+  store.destroy();
+  expect(() => store.getState().setCount(0)).toThrow('Store destroyed');
+});
+
+test('cannot destroy a store twice', async () => {
+  const Store = () => {
+    const [count, setCount] = Democrat.useState(42);
+    return {
+      count: count,
+      setCount,
+    };
+  };
+  const store = Democrat.createStore(Democrat.createElement(Store));
+  store.destroy();
+  expect(() => store.destroy()).toThrow('Store already destroyed');
 });

@@ -12,8 +12,6 @@ export interface MutableRefObject<T> {
 
 export type EffectType = 'EFFECT' | 'LAYOUT_EFFECT';
 
-type Unsubscribe = () => void;
-
 export interface StatePatch {
   path: Array<TreeElementPath>;
   type: 'STATE';
@@ -32,17 +30,6 @@ export type Patch = StatePatch | ReducerPatch;
 
 export type Patches = Array<Patch>;
 
-export interface Store<S> {
-  getState: () => S;
-  subscribe: (onChange: () => void) => Unsubscribe;
-  destroy: () => void;
-  // patches
-  subscribePatches: (onPatches: (patches: Patches) => void) => Unsubscribe;
-  applyPatches: (patches: Patches) => void;
-  // snapshot
-  getSnapshot: () => Snapshot;
-}
-
 export type Key = string | number | undefined;
 
 export interface DemocratContextProvider<P> {
@@ -50,23 +37,10 @@ export interface DemocratContextProvider<P> {
   context: Context<P>;
 }
 
-// type ContextConsumerRender<T, HasDefault extends boolean, C> = (
-//   value: HasDefault extends true ? T : T | undefined
-// ) => C;
-
-// export interface DemocratContextConsumer<P> {
-//   [DEMOCRAT_CONTEXT]: 'CONSUMER';
-//   context: Context<P>;
-// }
-
 export type ContextProviderProps<P, T> = Props<{
   value: P;
   children: T;
 }>;
-
-// export type ContextConsumerProps<P, T> = Props<{
-//   children: ContextConsumerRender<P, boolean, T>;
-// }>;
 
 export interface DemocratElementComponent<P, T> {
   [DEMOCRAT_ELEMENT]: true;
@@ -82,13 +56,6 @@ export interface DemocratElementProvider<P, T> {
   key: Key;
 }
 
-// export interface DemocratElementConsumer<P, T> {
-//   [DEMOCRAT_ELEMENT]: true;
-//   type: DemocratContextConsumer<P>;
-//   props: ContextConsumerProps<P, T>;
-//   key: Key;
-// }
-
 export interface DemocratRootElement {
   [DEMOCRAT_ELEMENT]: true;
   [DEMOCRAT_ROOT]: true;
@@ -100,14 +67,12 @@ export interface DemocratRootElement {
  * For contexts: P is Context value, T is return type
  */
 export type DemocratElement<P, T> = DemocratElementComponent<P, T> | DemocratElementProvider<P, T>;
-// | DemocratElementConsumer<P, T>;
 
 export interface Context<T, HasDefault extends boolean = boolean> {
   [DEMOCRAT_CONTEXT]: {
     hasDefault: HasDefault;
     defaultValue: T;
   };
-  // Consumer: DemocratContextConsumer<T>;
   Provider: DemocratContextProvider<T>;
 }
 
@@ -253,12 +218,6 @@ export type TreeElementData = {
   MAP: {
     children: Map<any, TreeElement>;
   };
-  // CONSUMER: {
-  //   element: DemocratElementConsumer<any, any>;
-  // };
-  // SET: {
-  //   children: Set<TreeElement>;
-  // };
 };
 
 export type TreeElementType = keyof TreeElementData;

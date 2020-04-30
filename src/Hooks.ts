@@ -1,248 +1,34 @@
-import { Subscription } from 'suub';
-import { ChildrenUtils } from './ChildrenUtils';
-import { getCurrentRootInstance, setCurrentRootInstance } from './Global';
 import {
-  depsChanged,
-  globalSetTimeout,
-  globalClearTimeout,
-  createRootTreeElement,
-  getPatchPath,
-} from './utils';
-import {
-  Store,
-  OnIdleExec,
   Children,
   ResolveType,
-  Dispatch,
-  SetStateAction,
-  StateHookData,
-  EffectCallback,
-  DependencyList,
-  EffectHookData,
-  LayoutEffectHookData,
-  MemoHookData,
-  MutableRefObject,
-  RefHookData,
-  EffectType,
-  Context,
-  ContextHookData,
-  DemocratRootElement,
-  TreeElement,
   TreeElementPath,
-  Patch,
-  Patches,
   ReducerWithoutAction,
   ReducerStateWithoutAction,
   DispatchWithoutAction,
   Reducer,
   ReducerState,
+  Dispatch,
   ReducerAction,
-  ReducerHookData,
   ReducerPatch,
+  ReducerHookData,
+  SetStateAction,
   StatePatch,
-  Snapshot,
+  StateHookData,
+  EffectCallback,
+  DependencyList,
+  EffectType,
+  EffectHookData,
+  LayoutEffectHookData,
+  MemoHookData,
+  MutableRefObject,
+  RefHookData,
+  Context,
+  ContextHookData,
 } from './types';
-import { DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
-
-export { isValidElement, createElement, createContext } from './utils';
-
-const Hooks = {
-  // hooks
-  useChildren,
-  useState,
-  useReducer,
-  useEffect,
-  useMemo,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-};
-
-export interface RenderOptions {
-  // pass an instance of React to override hooks
-  ReactInstance?: null | any;
-  // In passive mode, effect are never not executed
-  passiveMode?: boolean;
-  // restore a snapshot
-  snapshot?: Snapshot;
-}
-
-export function render<C extends Children>(
-  rootChildren: C,
-  options: RenderOptions = {}
-): Store<ResolveType<C>> {
-  const { ReactInstance = null, passiveMode = false, snapshot } = options;
-
-  const stateSub = Subscription.create();
-  const patchesSub = Subscription.create<Patches>();
-
-  let state: ResolveType<C>;
-  let destroyed: boolean = false;
-  let execQueue: null | Array<OnIdleExec> = null;
-  let renderRequested = false;
-  let flushScheduled = false;
-  let patchesQueue: Patches = [];
-
-  const rootElem: DemocratRootElement = {
-    [DEMOCRAT_ELEMENT]: true,
-    [DEMOCRAT_ROOT]: true,
-    children: rootChildren,
-  };
-
-  let rootInstance: TreeElement<'ROOT'> = createRootTreeElement({
-    onIdle,
-    requestRender,
-    applyPatches,
-    passiveMode,
-  });
-
-  if (ReactInstance) {
-    rootInstance.supportReactHooks(ReactInstance, Hooks);
-  }
-
-  doRender();
-
-  return {
-    getState: () => state,
-    subscribe: stateSub.subscribe,
-    destroy,
-    subscribePatches: patchesSub.subscribe,
-    applyPatches,
-    getSnapshot,
-  };
-
-  function getSnapshot(): Snapshot {
-    return ChildrenUtils.snapshot<'ROOT'>(rootInstance);
-  }
-
-  function doRender(): void {
-    if (destroyed) {
-      throw new Error('Store destroyed');
-    }
-    setCurrentRootInstance(rootInstance);
-    if (rootInstance.mounted === false) {
-      rootInstance = ChildrenUtils.mount(rootElem, rootInstance, null as any, snapshot) as any;
-    } else {
-      rootInstance = ChildrenUtils.update(rootInstance, rootElem, null as any, null as any) as any;
-    }
-    setCurrentRootInstance(null);
-    state = rootInstance.value;
-    // Schedule setTimeout(() => runEffect)
-    const effectTimer = scheduleEffects();
-    // run layoutEffects
-    ChildrenUtils.layoutEffects(rootInstance);
-    // Apply all `setState`
-    const layoutEffectsRequestRender = flushExecQueue();
-    if (layoutEffectsRequestRender) {
-      // cancel the setTimeout
-      globalClearTimeout(effectTimer);
-      // run effect synchronously
-      ChildrenUtils.effects(rootInstance);
-      // apply setState
-      flushExecQueue();
-      doRender();
-    } else {
-      // not setState in Layout effect
-      stateSub.call();
-      if (patchesQueue.length > 0) {
-        const patches = patchesQueue;
-        patchesQueue = [];
-        patchesSub.call(patches);
-      }
-      return;
-    }
-  }
-
-  function onIdle(exec: OnIdleExec) {
-    if (destroyed) {
-      throw new Error('Store destroyed');
-    }
-    if (rootInstance.isRendering()) {
-      throw new Error(`Cannot setState during render !`);
-    }
-    if (execQueue === null) {
-      execQueue = [exec];
-    } else {
-      execQueue.push(exec);
-    }
-    scheduleFlush();
-  }
-
-  function scheduleFlush(): void {
-    if (flushScheduled) {
-      return;
-    }
-    flushScheduled = true;
-    globalSetTimeout(() => {
-      flushScheduled = false;
-      const shouldRender = flushExecQueue();
-      if (shouldRender) {
-        doRender();
-      }
-    }, 0);
-  }
-
-  function requestRender(patch: Patch | null): void {
-    if (patch) {
-      patchesQueue.push(patch);
-    }
-    renderRequested = true;
-  }
-
-  function flushExecQueue(): boolean {
-    renderRequested = false;
-    if (execQueue) {
-      execQueue.forEach(exec => {
-        exec();
-      });
-      execQueue = null;
-    }
-    return renderRequested;
-  }
-
-  function scheduleEffects(): number {
-    return globalSetTimeout(() => {
-      ChildrenUtils.effects(rootInstance);
-      const shouldRender = flushExecQueue();
-      if (shouldRender) {
-        doRender();
-      }
-    }, 0);
-  }
-
-  function applyPatches(patches: Patches) {
-    rootInstance.onIdle(() => {
-      patches.forEach(patch => {
-        const instance = ChildrenUtils.access(rootInstance, patch.path);
-        if (instance === null || instance.type !== 'CHILD' || instance.hooks === null) {
-          return;
-        }
-        const hook = instance.hooks[patch.hookIndex];
-        if (!hook || hook.type !== patch.type) {
-          return;
-        }
-        // Should we use setValue / dispath ? If yes we need to prevent from re-emitting the patch
-        // hook.setValue(patch.value)
-        if (patch.type === 'STATE' && hook.type === 'STATE') {
-          hook.value = patch.value;
-        }
-        if (patch.type === 'REDUCER' && hook.type === 'REDUCER') {
-          hook.value = hook.reducer(hook.value, patch.action);
-        }
-        rootInstance.markDirty(instance);
-        instance.root.requestRender(null);
-      });
-    });
-  }
-
-  function destroy() {
-    if (destroyed) {
-      throw new Error('Store already destroyed');
-    }
-    ChildrenUtils.unmount(rootInstance);
-    destroyed = true;
-  }
-}
+import { getCurrentRootInstance } from './Global';
+import { ChildrenUtils } from './ChildrenUtils';
+import { getPatchPath, depsChanged } from './utils';
+import { DEMOCRAT_CONTEXT } from './symbols';
 
 export function useChildren<C extends Children>(children: C): ResolveType<C> {
   const root = getCurrentRootInstance();
@@ -535,7 +321,3 @@ export function useContextOrThrow<C extends Context<any>>(
   }
   return value;
 }
-
-// useImperativeHandle<T, R extends T>(ref: Ref<T>|undefined, init: () => R, deps?: DependencyList): void;
-
-// useDebugValue<T>(value: T, format?: (value: T) => any): void;

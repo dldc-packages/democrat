@@ -1,21 +1,5 @@
-export {
-  createContext,
-  createElement,
-  isValidElement,
-  render,
-  RenderOptions,
-  // hooks
-  useChildren,
-  useState,
-  useReducer,
-  useEffect,
-  useMemo,
-  useCallback,
-  useLayoutEffect,
-  useRef,
-  useContext,
-  useContextOrThrow,
-} from './Democrat';
+export * from './Store';
+export * from './Hooks';
 
 export {
   Children,
@@ -43,7 +27,6 @@ export {
   SetStateAction,
   Snapshot,
   StatePatch,
-  Store,
   TreeElementPath,
   TreeElementSnapshot,
 } from './types';
