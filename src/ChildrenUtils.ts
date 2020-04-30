@@ -125,7 +125,7 @@ const CHILDREN_LIFECYCLES: {
         value: null,
         previous: null,
         dirty: false,
-        hooks: [],
+        hooks: null,
         nextHooks: [],
       });
       tree.value = tree.root.withGlobalRenderingInstance(tree, () => {
@@ -559,56 +559,6 @@ const CHILDREN_LIFECYCLES: {
       return { type: 'PROVIDER', children: snapshot(instance.children) };
     },
   },
-  // SET: {
-  //   mount: (element, parent) => {
-  //     const children = mapSet(element, v => mount(v, parent));
-  //     const item = createTreeElement('SET', parent, {
-  //       value: mapSet(children, item => item.value),
-  //       children,
-  //       previous: null,
-  //     });
-  //     return item;
-  //   },
-  //   update: () => {
-  //     throw new Error('Update on Set children is not implemented yet');
-  //   },
-  //   effect: (tree, type) => {
-  //     tree.children.forEach(item => {
-  //       effectInternal(item, type);
-  //     });
-  //   },
-  //   cleanup: (tree, type, force) => {
-  //     if (force === true || tree.state === 'removed') {
-  //       tree.children.forEach(item => {
-  //         cleanup(item, type, true);
-  //       });
-  //       return;
-  //     }
-  //     tree.children.forEach(item => {
-  //       cleanup(item, type, false);
-  //     });
-  //   },
-  // },
-  // CONSUMER: {
-  //   mount: (_element, _parent) => {
-  //     throw new Error('Consumer is not supported yet, use useContext or useContextOrThrow instead');
-  //     // return createTreeElement('CONSUMER', parent, {
-  //     //   value: null,
-  //     //   previous: null,
-  //     //   element: element,
-  //     // });
-  //   },
-  //   update: tree => {
-  //     return tree;
-  //     // throw new Error('Update on Consumer children is not implemented yet');
-  //   },
-  //   effect: (_tree, _type) => {
-  //     // effectInternal(tree.)
-  //   },
-  //   cleanup: () => {
-  //     // throw new Error('Not implemented yet');
-  //   },
-  // },
 };
 
 function access(instance: TreeElement, paths: Array<TreeElementPath>): TreeElement | null {
@@ -674,6 +624,7 @@ function update(
   })();
 
   if (shouldUnmoutRemount) {
+    console.log('shouldUnmoutRemount');
     // we mount the new children and flag the old one as removed
     const nextTree = mount(element, parent!, path, undefined);
     instance.state = 'removed';
