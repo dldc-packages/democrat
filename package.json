@@ -44,7 +44,7 @@
     "trailingComma": "es5"
   },
   "dependencies": {
-    "suub": "^2.0.3"
+    "suub": "^2.1.0"
   },
   "devDependencies": {
     "@types/jest": "^25.2.1",
@@ -52,7 +52,7 @@
     "husky": "^4.2.5",
     "np": "^6.2.3",
     "tsdx": "^0.13.2",
-    "tslib": "^1.11.1",
+    "tslib": "^1.11.2",
     "typescript": "^3.8.3"
   }
 }

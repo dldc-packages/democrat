@@ -31,10 +31,6 @@ export function isRootElement(maybe: any): maybe is DemocratRootElement {
   return maybe && maybe[DEMOCRAT_ELEMENT] === true && maybe[DEMOCRAT_ROOT] === true;
 }
 
-// export function createElement<P, T>(
-//   context: DemocratContextConsumer<P>,
-//   props: ContextConsumerProps<P, T>
-// ): DemocratElement<P, ResolveType<T>>;
 export function createElement<P, T>(
   component: Component<P, T>,
   props: Props<P>
@@ -126,14 +122,6 @@ export function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): M
   return result;
 }
 
-// export function mapSet<V, U>(source: Set<V>, mapper: (v: V) => U): Set<U> {
-//   const result = new Set<U>();
-//   source.forEach(v => {
-//     result.add(mapper(v));
-//   });
-//   return result;
-// }
-
 export function createContext<T>(): Context<T, false>;
 export function createContext<T>(defaultValue: T): Context<T, true>;
 export function createContext<T>(defaultValue?: T): Context<T, boolean> {
@@ -142,16 +130,11 @@ export function createContext<T>(defaultValue?: T): Context<T, boolean> {
       hasDefault: defaultValue !== undefined && arguments.length === 1,
       defaultValue: defaultValue as any, // force undefined when there a no default value
     },
-    // Consumer: {
-    //   [DEMOCRAT_CONTEXT]: 'CONSUMER',
-    //   context: null as any,
-    // },
     Provider: {
       [DEMOCRAT_CONTEXT]: 'PROVIDER',
       context: null as any,
     },
   };
-  // context.Consumer.context = context;
   context.Provider.context = context;
   return context;
 }
@@ -167,12 +150,6 @@ export function isProviderElement(
 ): element is DemocratElementProvider<any, any> {
   return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'PROVIDER';
 }
-
-// export function isConsumerElement(
-//   element: DemocratElement<any, any>
-// ): element is DemocratElementConsumer<any, any> {
-//   return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'CONSUMER';
-// }
 
 const nextId = (() => {
   let id = 0;
