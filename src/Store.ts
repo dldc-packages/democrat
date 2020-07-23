@@ -44,8 +44,8 @@ export function createStore<C extends Children>(
 ): Store<ResolveType<C>> {
   const { ReactInstance = null, passiveMode = false, snapshot } = options;
 
-  const stateSub = Subscription.create();
-  const patchesSub = Subscription.create<Patches>();
+  const stateSub = Subscription();
+  const patchesSub = Subscription<Patches>();
 
   let state: ResolveType<C>;
   let destroyed: boolean = false;
@@ -122,11 +122,11 @@ export function createStore<C extends Children>(
       doRender();
     } else {
       // not setState in Layout effect
-      stateSub.call();
+      stateSub.emit();
       if (patchesQueue.length > 0) {
         const patches = patchesQueue;
         patchesQueue = [];
-        patchesSub.call(patches);
+        patchesSub.emit(patches);
       }
       return;
     }
