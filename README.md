@@ -26,7 +26,7 @@ import * as Democrat from 'democrat';
 
 // Create a Democrat "component"
 const MainStore = () => {
-  // all your familair hooks are here
+  // all your familiar hooks are here
   const [count, setCount] = Democrat.useState(0);
 
   const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
