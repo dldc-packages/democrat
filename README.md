@@ -11,7 +11,7 @@ You can then use this state tree as global state management system (like redux o
 
 ## Project Status
 
-This project is still quite experimental and should not be considered stable !
+While this project is probably not 100% stable it has a decent amount of tests and is used in a few projects without any issue.
 
 ## Install
 
@@ -83,7 +83,7 @@ const Parent = () => {
 
 ## `useChildren` supported data
 
-React only supports `Array`, `string`, `number` and `booleans` in JSX.
+React supports `Array`, `string`, `number` and `booleans` in JSX.
 `useChildren` supports the following data structure:
 
 - `Array` (`[]`)
@@ -110,7 +110,7 @@ const Parent = () => {
 ## Using hooks library
 
 Because Democrat's hooks works just like React's ones with a little trick you can use some of the React hook in Democrat.
-All you need to do is pass an instance of `React` to the `Democrat.render` options.
+All you need to do is pass the instance of `React` to the `Democrat.render` options.
 
 ```js
 import React from 'react';
@@ -119,7 +119,7 @@ import { render } from 'democrat';
 render(/*...*/, { ReactInstance: React });
 ```
 
-For now only the following hooks are supported:
+For now the following hooks are supported:
 
 - `useState`
 - `useReducer`
