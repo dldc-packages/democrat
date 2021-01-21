@@ -8,7 +8,7 @@
     "start": "parcel index.html"
   },
   "dependencies": {
-    "immer": "^7.0.9",
+    "immer": "^8.0.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "suub": "^3.1.0"
