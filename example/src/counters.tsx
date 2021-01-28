@@ -59,7 +59,7 @@ const AppStore = () => {
 };
 
 function runExample() {
-  const store = React.render(React.createElement(AppStore));
+  const store = React.createStore(React.createElement(AppStore));
 
   const render = () => {
     const state = store.getState();

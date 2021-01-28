@@ -85,7 +85,7 @@ function runExample() {
     log('render: promise');
   });
 
-  const store = Democrat.render(Democrat.createElement(AppStore));
+  const store = Democrat.createStore(Democrat.createElement(AppStore));
 
   return () => store.destroy();
 }

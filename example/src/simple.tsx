@@ -19,7 +19,7 @@ const Store = () => {
 };
 
 function runExample() {
-  const store = Democrat.render(Democrat.createElement(Store));
+  const store = Democrat.createStore(Democrat.createElement(Store));
 
   const render = () => {
     console.log(store.getState());

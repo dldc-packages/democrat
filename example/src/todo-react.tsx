@@ -83,7 +83,7 @@ const TodosRender: React.FC<{ state: State }> = ({ state }) => {
 };
 
 function runExample() {
-  const store = Democrat.render(Democrat.createElement(TodosStore));
+  const store = Democrat.createStore(Democrat.createElement(TodosStore));
 
   const render = () => {
     ReactDOM.render(<TodosRender state={store.getState()} />, document.getElementById('app'));

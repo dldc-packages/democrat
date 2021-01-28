@@ -40,7 +40,7 @@ const Parent = () => {
 };
 
 function runExample() {
-  const store = Democrat.render(Democrat.createElement(Parent));
+  const store = Democrat.createStore(Democrat.createElement(Parent));
 
   const render = () => {
     console.log(store.getState());
