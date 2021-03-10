@@ -26,18 +26,12 @@
   "scripts": {
     "build": "tsdx build",
     "codecov": "codecov",
-    "postinstall": "husky install",
     "lint": "tsdx lint src test",
     "pub": "yarn build && np",
     "start": "tsdx watch",
     "test": "tsdx test --coverage",
     "test:watch": "tsdx test --watch",
     "example:run": "esbuild example/index.tsx --servedir=example --outdir=example --bundle --define:process.env.NODE_ENV=\"'development'\""
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "tsdx lint"
-    }
   },
   "prettier": {
     "printWidth": 100,
@@ -75,7 +69,6 @@
     "@typescript-eslint/parser": "^4.1.1",
     "codecov": "^3.8.1",
     "esbuild": "^0.9.0",
-    "husky": "^5.1.3",
     "immer": "^8.0.1",
     "np": "^7.4.0",
     "react": "^17.0.1",
