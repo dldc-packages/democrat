@@ -125,15 +125,18 @@ export function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): M
 export function createContext<T>(): Context<T, false>;
 export function createContext<T>(defaultValue: T): Context<T, true>;
 export function createContext<T>(defaultValue?: T): Context<T, boolean> {
+  const Provider: DemocratContextProvider<T> = {
+    [DEMOCRAT_CONTEXT]: 'PROVIDER',
+    context: null as any,
+    createElement: props => createElement(Provider, props) as any,
+  };
+
   const context: Context<T, boolean> = {
     [DEMOCRAT_CONTEXT]: {
       hasDefault: defaultValue !== undefined && arguments.length === 1,
       defaultValue: defaultValue as any, // force undefined when there a no default value
     },
-    Provider: {
-      [DEMOCRAT_CONTEXT]: 'PROVIDER',
-      context: null as any,
-    },
+    Provider,
   };
   context.Provider.context = context;
   return context;

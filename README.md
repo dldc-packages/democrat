@@ -22,14 +22,14 @@ npm install democrat
 ## Gist
 
 ```ts
-import * as Democrat from 'democrat';
+import { useState, useCallback, createComponent, createElement } from 'democrat';
 
 // Create a Democrat "component"
 const MainStore = () => {
   // all your familiar hooks are here
-  const [count, setCount] = Democrat.useState(0);
+  const [count, setCount] = useState(0);
 
-  const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
+  const increment = useCallback(() => setCount(prev => prev + 1), []);
 
   // return your state at the end
   return {
@@ -39,7 +39,7 @@ const MainStore = () => {
 };
 
 // Render your component
-const store = Democrat.render(Democrat.createElement(Store));
+const store = Democrat.render(createElement(MainStore));
 // subscribe to state update
 store.subscribe(render);
 render();
@@ -51,7 +51,7 @@ function render = () => {
 
 ## How is this different from React ?
 
-There are two main diffrences with React
+There are a few diffrences with React
 
 ### 1. Return value
 
@@ -81,9 +81,13 @@ const Parent = () => {
 };
 ```
 
+### 3. `createElement` signature
+
+The signature of Democrat's `createElement` is `createElement(Component, props)`. As you can see, unlike the React's one it does not accept `...children` as argument, instead you should pass children as a props.
+This difference mainly exist because of TypeScript since we can't correctly type `...children`.
+
 ## `useChildren` supported data
 
-React supports `Array`, `string`, `number` and `booleans` in JSX.
 `useChildren` supports the following data structure:
 
 - `Array` (`[]`)
@@ -109,7 +113,7 @@ const Parent = () => {
 
 ## Using hooks library
 
-Because Democrat's hooks works just like React's ones with a little trick you can use some of the React hook in Democrat.
+Because Democrat's hooks works just like React's ones with a little trick you can use some of React hooks in Democrat. This let you use third party hooks made for React directly in Democrat.
 All you need to do is pass the instance of `React` to the `Democrat.render` options.
 
 ```js
@@ -130,6 +134,22 @@ For now the following hooks are supported:
 - `useRef`
 
 **Note**: While `useContext` exists in Democrat we cannot use the React version of it because of how context works (we would need to also replace `createContext` but we have no way to detect when we should create a Democrat context vs when we should create a React context...).
+
+## `createComponent`
+
+The `createComponent` function is a small helper. It returns the `Component` you pass in as well as two functions:
+
+- `createElement`: to create an element out of the component by passing the props.
+- `useChildren`: to quickly use the component as children.
+
+```js
+const Child = createComponent(({ name }) => {});
+
+const Parent = createComponent(() => {
+  const child1 = useChildren(Child.createElement({ name: 'Paul' }));
+  const child2 = Child.useChildren({ name: 'Paul' });
+});
+```
 
 ## Components
 

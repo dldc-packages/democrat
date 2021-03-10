@@ -1,7 +1,12 @@
 import { Subscription, Unsubscribe } from 'suub';
 import { ChildrenUtils } from './ChildrenUtils';
 import { setCurrentRootInstance } from './Global';
-import { globalSetTimeout, globalClearTimeout, createRootTreeElement } from './utils';
+import {
+  globalSetTimeout,
+  globalClearTimeout,
+  createRootTreeElement,
+  createElement,
+} from './utils';
 import {
   OnIdleExec,
   Children,
@@ -11,9 +16,12 @@ import {
   Patch,
   Patches,
   Snapshot,
+  DemocratComponentFunction,
+  DemocratComponent,
 } from './types';
-import { DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
+import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 import * as Hooks from './Hooks';
+import { useChildren } from './Hooks';
 
 export { isValidElement, createElement, createContext } from './utils';
 
@@ -36,6 +44,21 @@ export interface CreateStoreOptions {
   passiveMode?: boolean;
   // restore a snapshot
   snapshot?: Snapshot;
+}
+
+export function createComponent<P = void, T = unknown>(
+  fn: DemocratComponentFunction<P, T>
+): DemocratComponent<P, T> {
+  return {
+    [DEMOCRAT_COMPONENT]: true,
+    Component: fn,
+    createElement: ((props: any) => {
+      return createElement(fn, props);
+    }) as any,
+    useChildren: ((props: any) => {
+      return useChildren(createElement(fn, props));
+    }) as any,
+  };
 }
 
 export function createStore<C extends Children>(

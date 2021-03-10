@@ -3,15 +3,15 @@ import { waitForNextState, waitForNextTick, mapMap, removeFunctionsDeep } from '
 
 test('basic count state', async () => {
   const onRender = jest.fn();
-  const Counter = () => {
+  const Counter = Democrat.createComponent(() => {
     onRender();
     const [count, setCount] = Democrat.useState(0);
     return {
       count,
       setCount,
     };
-  };
-  const store = Democrat.createStore(Democrat.createElement(Counter));
+  });
+  const store = Democrat.createStore(Counter.createElement());
   expect(store.getState().count).toEqual(0);
   await waitForNextTick();
   store.getState().setCount(42);

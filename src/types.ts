@@ -1,4 +1,4 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT, DEMOCRAT_COMPONENT } from './symbols';
 
 export type Dispatch<A> = (value: A) => void;
 export type SetStateAction<S> = S | ((prevState: S) => S);
@@ -35,12 +35,26 @@ export type Key = string | number | undefined;
 export interface DemocratContextProvider<P> {
   [DEMOCRAT_CONTEXT]: 'PROVIDER';
   context: Context<P>;
+  createElement: <T>(
+    props: ContextProviderProps<P, T>
+  ) => DemocratElementProvider<P, ResolveType<T>>;
 }
 
 export type ContextProviderProps<P, T> = Props<{
   value: P;
   children: T;
 }>;
+
+export type DemocratComponentFunction<P, T> = (props: P) => T;
+
+export type DemocratComponent<P, T> = {
+  Component: DemocratComponentFunction<P, T>;
+  [DEMOCRAT_COMPONENT]: true;
+  createElement: P extends void
+    ? () => DemocratElementComponent<P, T>
+    : (props: P) => DemocratElementComponent<P, T>;
+  useChildren: P extends void ? () => T : (props: P) => T;
+};
 
 export interface DemocratElementComponent<P, T> {
   [DEMOCRAT_ELEMENT]: true;

@@ -6,6 +6,8 @@ export {
   Component,
   Context,
   DemocratElement,
+  DemocratComponent,
+  DemocratComponentFunction,
   DependencyList,
   Dispatch,
   DispatchWithoutAction,
