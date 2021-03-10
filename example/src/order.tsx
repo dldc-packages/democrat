@@ -1,4 +1,12 @@
-import * as Democrat from '../../src';
+/* eslint-disable react-hooks/exhaustive-deps */
+import {
+  createStore,
+  createComponent,
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useChildren,
+} from '../../src';
 
 let logCount = 0;
 const log = (...vals) => console.log(logCount++, ...vals);
@@ -7,8 +15,8 @@ const log = (...vals) => console.log(logCount++, ...vals);
 
 let nextNum = 0;
 
-const Counter: Democrat.Component<{}, null> = () => {
-  const [count, setCounter] = Democrat.useState(0);
+const Counter = createComponent(() => {
+  const [count, setCounter] = useState(0);
 
   const num = nextNum++;
 
@@ -22,28 +30,28 @@ const Counter: Democrat.Component<{}, null> = () => {
     log('Child: promise', num);
   });
 
-  Democrat.useEffect(() => {
+  useEffect(() => {
     log('Child: effect', num);
   });
 
-  Democrat.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     log('Child: layout effect', num);
   });
 
-  Democrat.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     log('Child: mount');
   }, []);
 
-  Democrat.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     log('Child: setCounter useLayoutEffect', count);
     setCounter(1);
   }, []);
 
   return null;
-};
+});
 
-const AppStore: Democrat.Component<{}, { count: number }> = () => {
-  const [count, setCounter] = Democrat.useState(0);
+const AppStore = createComponent(() => {
+  const [count, setCounter] = useState(0);
 
   log('App: render', count, typeof setCounter);
 
@@ -55,37 +63,37 @@ const AppStore: Democrat.Component<{}, { count: number }> = () => {
     log('App: promise', count);
   });
 
-  Democrat.useEffect(() => {
+  useEffect(() => {
     log('App: effect', count);
   });
 
-  Democrat.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     log('App: layout effect', count);
   });
 
-  Democrat.useLayoutEffect(() => {
+  useLayoutEffect(() => {
     log('App: useLayoutEffect setCounter', count);
     setCounter(1);
   }, []);
 
-  Democrat.useEffect(() => {
+  useEffect(() => {
     log('App: useEffect setCounter', count);
     setCounter(2);
   }, []);
 
-  Democrat.useChildren(Democrat.createElement(Counter, {}));
+  useChildren(Counter.createElement());
 
   return {
     count,
   };
-};
+});
 
 function runExample() {
   Promise.resolve().then(() => {
     log('render: promise');
   });
 
-  const store = Democrat.createStore(Democrat.createElement(AppStore));
+  const store = createStore(AppStore.createElement());
 
   return () => store.destroy();
 }

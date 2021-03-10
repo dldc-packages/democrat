@@ -1,21 +1,28 @@
-// by importing as React we get eslint hook plugin working for free !
-import * as React from '../../src';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  createStore,
+  useChildren,
+  createComponent,
+} from '../../src';
 
-const Counter = ({ index }: { index: number }) => {
-  const [count, setCounter] = React.useState(0);
+const Counter = createComponent(({ index }: { index: number }) => {
+  const [count, setCounter] = useState(0);
 
-  const increment = React.useCallback(() => {
+  const increment = useCallback(() => {
     setCounter(prev => prev + 1);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     console.log(`Counter ${index} effect`);
     return () => {
       console.log(`Counter ${index} cleanup`);
     };
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     console.log(`Mount Counter ${index}`);
     return () => {
       console.log(`Unmount Counter ${index}`);
@@ -23,31 +30,31 @@ const Counter = ({ index }: { index: number }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return React.useMemo(
+  return useMemo(
     () => ({
       increment,
       count,
     }),
     [increment, count]
   );
-};
+});
 
-const AppStore = () => {
-  const [count, setCounter] = React.useState(3);
+const AppStore = createComponent(() => {
+  const [count, setCounter] = useState(3);
 
-  const increment = React.useCallback(() => {
+  const increment = useCallback(() => {
     setCounter(prev => prev + 1);
   }, []);
 
-  const decrement = React.useCallback(() => {
+  const decrement = useCallback(() => {
     setCounter(prev => prev - 1);
   }, []);
 
-  const counters = React.useChildren(
-    new Array(count).fill(null).map((_, index) => React.createElement(Counter, { index }))
+  const counters = useChildren(
+    new Array(count).fill(null).map((_, index) => Counter.createElement({ index }))
   );
 
-  return React.useMemo(
+  return useMemo(
     () => ({
       count,
       increment,
@@ -56,10 +63,10 @@ const AppStore = () => {
     }),
     [count, increment, decrement, counters]
   );
-};
+});
 
 function runExample() {
-  const store = React.createStore(React.createElement(AppStore));
+  const store = createStore(AppStore.createElement());
 
   const render = () => {
     const state = store.getState();

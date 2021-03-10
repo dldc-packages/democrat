@@ -1,6 +1,6 @@
 import * as Democrat from '../../src';
-import React from 'react';
-import ReactDOM from 'react-dom';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 
 function generateId(): string {
   return (
@@ -23,7 +23,7 @@ interface State {
   toggleTodo: (todoId: string) => void;
 }
 
-const TodosStore: Democrat.Component<{}, State> = () => {
+const TodosStore = Democrat.createComponent<void, State>(() => {
   const [todos, setTodos] = Democrat.useState<Array<Todo>>([]);
 
   const addTodo = Democrat.useCallback((title: string) => {
@@ -52,7 +52,7 @@ const TodosStore: Democrat.Component<{}, State> = () => {
     }),
     [todos, addTodo, toggleTodo]
   );
-};
+});
 
 const TodosRender: React.FC<{ state: State }> = ({ state }) => {
   const [newTodo, setNewTodo] = React.useState('');
@@ -83,7 +83,7 @@ const TodosRender: React.FC<{ state: State }> = ({ state }) => {
 };
 
 function runExample() {
-  const store = Democrat.createStore(Democrat.createElement(TodosStore));
+  const store = Democrat.createStore(TodosStore.createElement());
 
   const render = () => {
     ReactDOM.render(<TodosRender state={store.getState()} />, document.getElementById('app'));

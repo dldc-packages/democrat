@@ -1,12 +1,12 @@
-import * as Democrat from '../../src';
+import { useState, useCallback, useMemo, createComponent, createStore } from '../../src';
 
-const Store = () => {
-  const [count, setCount] = Democrat.useState(0);
+const Store = createComponent(() => {
+  const [count, setCount] = useState(0);
 
-  const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
-  const decrement = Democrat.useCallback(() => setCount(prev => prev - 1), []);
+  const increment = useCallback(() => setCount(prev => prev + 1), []);
+  const decrement = useCallback(() => setCount(prev => prev - 1), []);
 
-  const result = Democrat.useMemo(
+  const result = useMemo(
     () => ({
       count,
       increment,
@@ -16,10 +16,10 @@ const Store = () => {
   );
 
   return result;
-};
+});
 
 function runExample() {
-  const store = Democrat.createStore(Democrat.createElement(Store));
+  const store = createStore(Store.createElement());
 
   const render = () => {
     console.log(store.getState());

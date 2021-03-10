@@ -1,5 +1,4 @@
-// @ts-ignore
-import EXAMPLES from './src/**.tsx';
+import EXAMPLES from './src';
 
 const root = document.getElementById('root')!;
 
@@ -18,7 +17,7 @@ Object.keys(EXAMPLES).forEach(key => {
           '\n'
         )
       );
-      cleanup = EXAMPLES[key].default();
+      cleanup = EXAMPLES[key]();
     }, 100);
   });
   root.appendChild(btn);

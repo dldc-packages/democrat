@@ -1,11 +1,18 @@
-import * as Democrat from '../../src';
+import {
+  createStore,
+  useCallback,
+  useChildren,
+  useMemo,
+  useState,
+  createComponent,
+} from '../../src';
 
-const Counter = () => {
-  const [count, setCount] = Democrat.useState(1);
+const Counter = createComponent(() => {
+  const [count, setCount] = useState(1);
 
-  const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
+  const increment = useCallback(() => setCount(prev => prev + 1), []);
 
-  const result = Democrat.useMemo(
+  const result = useMemo(
     () => ({
       count,
       increment,
@@ -14,22 +21,22 @@ const Counter = () => {
   );
 
   return result;
-};
+});
 
-const Store = () => {
-  const counter = Democrat.useChildren(Democrat.createElement(Counter));
-  const countersObject = Democrat.useChildren({
-    counterA: Democrat.createElement(Counter),
-    counterB: Democrat.createElement(Counter),
+const Store = createComponent(() => {
+  const counter = useChildren(Counter.createElement());
+  const countersObject = useChildren({
+    counterA: Counter.createElement(),
+    counterB: Counter.createElement(),
   });
-  const countersArray = Democrat.useChildren(
+  const countersArray = useChildren(
     // create as many counters as `count`
     Array(counter.count)
       .fill(null)
-      .map(() => Democrat.createElement(Counter))
+      .map(() => Counter.createElement())
   );
 
-  return Democrat.useMemo(
+  return useMemo(
     () => ({
       counter,
       countersObject,
@@ -37,10 +44,10 @@ const Store = () => {
     }),
     [counter, countersObject, countersArray]
   );
-};
+});
 
 function runExample() {
-  const store = Democrat.createStore(Democrat.createElement(Store));
+  const store = createStore(Store.createElement());
 
   const render = () => {
     console.log(store.getState());
