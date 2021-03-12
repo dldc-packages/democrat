@@ -29,4 +29,6 @@ export {
   StatePatch,
   TreeElementPath,
   TreeElementSnapshot,
+  ElementComponent,
+  ElementProvider,
 } from './types';
