@@ -1,16 +1,12 @@
 import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols';
 import {
-  Component,
+  FunctionComponent,
   DependencyList,
-  Props,
-  AllOptional,
   Context,
-  DemocratElement,
+  Element,
   DemocratContextProvider,
-  ContextProviderProps,
-  ResolveType,
-  DemocratElementComponent,
-  DemocratElementProvider,
+  ElementComponent,
+  ElementProvider,
   TreeElementType,
   TreeElementCommon,
   TreeElementData,
@@ -21,9 +17,11 @@ import {
   TreeElementPath,
   Patch,
   Patches,
+  ResolveType,
+  ContextProviderProps,
 } from './types';
 
-export function isValidElement(maybe: any): maybe is DemocratElement<any, any> {
+export function isValidElement(maybe: any): maybe is Element<any> {
   return maybe && maybe[DEMOCRAT_ELEMENT] === true;
 }
 
@@ -31,28 +29,30 @@ export function isRootElement(maybe: any): maybe is DemocratRootElement {
   return maybe && maybe[DEMOCRAT_ELEMENT] === true && maybe[DEMOCRAT_ROOT] === true;
 }
 
+/**
+ * Create a Democrat element
+ * This function is not strictly typed,
+ * To safely create element use createFactory(component).createElement
+ */
 export function createElement<P, T>(
-  component: Component<P, T>,
-  props: Props<P>
-): DemocratElement<P, T>;
+  component: FunctionComponent<P, T>,
+  props: P,
+  key?: string | number | undefined
+): Element<T>;
 export function createElement<P, T>(
   context: DemocratContextProvider<P>,
-  props: ContextProviderProps<P, T>
-): DemocratElement<P, ResolveType<T>>;
-export function createElement<P, T>(
-  component: Component<P, T>,
-  props?: Props<P>
-): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' };
-export function createElement<P, T>(
-  component: Component<P, T> | DemocratContextProvider<P>,
-  props: Props<P> = {} as any
-): AllOptional<P> extends true ? DemocratElement<P, T> : { typeError: 'Props are required !' } {
-  const key = props.key;
-  delete props.key;
-  const element: DemocratElement<P, T> = {
+  props: ContextProviderProps<P, T>,
+  key?: string | number | undefined
+): Element<ResolveType<T>>;
+export function createElement<P extends {}, T>(
+  component: FunctionComponent<P, T> | DemocratContextProvider<P>,
+  props: P = {} as any,
+  key?: string | number | undefined
+): Element<T> {
+  const element: Element<T> = {
     [DEMOCRAT_ELEMENT]: true,
     type: component as any,
-    props: props,
+    props: props as any,
     key,
   };
   return element as any;
@@ -128,9 +128,8 @@ export function createContext<T>(defaultValue?: T): Context<T, boolean> {
   const Provider: DemocratContextProvider<T> = {
     [DEMOCRAT_CONTEXT]: 'PROVIDER',
     context: null as any,
-    createElement: props => createElement(Provider, props) as any,
+    createElement: (props, key) => createElement(Provider, props as any, key) as any,
   };
-
   const context: Context<T, boolean> = {
     [DEMOCRAT_CONTEXT]: {
       hasDefault: defaultValue !== undefined && arguments.length === 1,
@@ -143,14 +142,12 @@ export function createContext<T>(defaultValue?: T): Context<T, boolean> {
 }
 
 export function isComponentElement(
-  element: DemocratElement<any, any>
-): element is DemocratElementComponent<any, any> {
+  element: Element<unknown>
+): element is ElementComponent<unknown> {
   return typeof element.type === 'function';
 }
 
-export function isProviderElement(
-  element: DemocratElement<any, any>
-): element is DemocratElementProvider<any, any> {
+export function isProviderElement(element: Element<unknown>): element is ElementProvider<unknown> {
   return typeof element.type !== 'function' && element.type[DEMOCRAT_CONTEXT] === 'PROVIDER';
 }
 

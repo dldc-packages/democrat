@@ -1,6 +1,6 @@
 import {
   EffectType,
-  DemocratElementComponent,
+  ElementComponent,
   TreeElementType,
   TreeElement,
   Context,
@@ -690,10 +690,7 @@ function cleanup(tree: TreeElement, effecType: EffectType, force: boolean) {
   cleanupTree(tree, effecType, force);
 }
 
-function renderElement<P, T>(
-  element: DemocratElementComponent<P, T>,
-  instance: TreeElement<'CHILD'>
-): T {
+function renderElement<T>(element: ElementComponent<T>, instance: TreeElement<'CHILD'>): T {
   // clear hooks
   instance.nextHooks = [];
   const result = element.type(element.props);

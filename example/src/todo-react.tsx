@@ -23,7 +23,7 @@ interface State {
   toggleTodo: (todoId: string) => void;
 }
 
-const TodosStore = Democrat.createComponent<void, State>(() => {
+const TodosStore = Democrat.createFactory<void, State>(() => {
   const [todos, setTodos] = Democrat.useState<Array<Todo>>([]);
 
   const addTodo = Democrat.useCallback((title: string) => {

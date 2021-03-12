@@ -22,7 +22,7 @@ npm install democrat
 ## Gist
 
 ```ts
-import { useState, useCallback, createComponent, createElement } from 'democrat';
+import { useState, useCallback, createElement } from 'democrat';
 
 // Create a Democrat "component"
 const MainStore = () => {
@@ -39,7 +39,7 @@ const MainStore = () => {
 };
 
 // Render your component
-const store = Democrat.render(createElement(MainStore));
+const store = Democrat.render(createElement(MainStore, {}));
 // subscribe to state update
 store.subscribe(render);
 render();
@@ -74,7 +74,7 @@ const Child = () => {
 
 const Parent = () => {
   //...
-  const childData = Democrat.useChildren(Democrat.createElement(Child));
+  const childData = Democrat.useChildren(Democrat.createElement(Child, {}));
   // childData = { some: 'data' }
   //...
   return { children: childData };
@@ -83,7 +83,7 @@ const Parent = () => {
 
 ### 3. `createElement` signature
 
-The signature of Democrat's `createElement` is `createElement(Component, props)`. As you can see, unlike the React's one it does not accept `...children` as argument, instead you should pass children as a props.
+The signature of Democrat's `createElement` is `createElement(Component, props, key)`. As you can see, unlike the React's one it does not accept `...children` as argument, instead you should pass children as a props.
 This difference mainly exist because of TypeScript since we can't correctly type `...children`.
 
 ## `useChildren` supported data
@@ -102,8 +102,8 @@ const Child = () => {
 const Parent = () => {
   //...
   const childData = Democrat.useChildren({
-    a: Democrat.createElement(Child),
-    b: Democrat.createElement(Child),
+    a: Democrat.createElement(Child, {}),
+    b: Democrat.createElement(Child, {}),
   });
   // childData = { a: 42, b: 42 }
   //...
@@ -135,17 +135,17 @@ For now the following hooks are supported:
 
 **Note**: While `useContext` exists in Democrat we cannot use the React version of it because of how context works (we would need to also replace `createContext` but we have no way to detect when we should create a Democrat context vs when we should create a React context...).
 
-## `createComponent`
+## `createFactory`
 
-The `createComponent` function is a small helper. It returns the `Component` you pass in as well as two functions:
+The `createFactory` function is a small helper. It returns the `Component` you pass in as well as two functions:
 
 - `createElement`: to create an element out of the component by passing the props.
 - `useChildren`: to quickly use the component as children.
 
 ```js
-const Child = createComponent(({ name }) => {});
+const Child = createFactory(({ name }) => {});
 
-const Parent = createComponent(() => {
+const Parent = createFactory(() => {
   const child1 = useChildren(Child.createElement({ name: 'Paul' }));
   const child2 = Child.useChildren({ name: 'Paul' });
 });
@@ -173,16 +173,16 @@ const Counter = () => {
 };
 
 const Store = () => {
-  const counter = Democrat.useChildren(Democrat.createElement(Counter));
+  const counter = Democrat.useChildren(Democrat.createElement(Counter, {}));
   const countersObject = Democrat.useChildren({
-    counterA: Democrat.createElement(Counter),
-    counterB: Democrat.createElement(Counter),
+    counterA: Democrat.createElement(Counter, {}),
+    counterB: Democrat.createElement(Counter, {}),
   });
   const countersArray = Democrat.useChildren(
     // create as many counters as `count`
     Array(counter.count)
       .fill(null)
-      .map(() => Democrat.createElement(Counter))
+      .map(() => Democrat.createElement(Counter, {}))
   );
 
   return Democrat.useMemo(

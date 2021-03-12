@@ -1,3 +1,4 @@
+/* istanbul ignore next */
 import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT, DEMOCRAT_COMPONENT } from './symbols';
 
 export type Dispatch<A> = (value: A) => void;
@@ -36,51 +37,52 @@ export interface DemocratContextProvider<P> {
   [DEMOCRAT_CONTEXT]: 'PROVIDER';
   context: Context<P>;
   createElement: <T>(
-    props: ContextProviderProps<P, T>
-  ) => DemocratElementProvider<P, ResolveType<T>>;
+    props: ContextProviderProps<P, T>,
+    key?: Key
+  ) => ElementProvider<ResolveType<T>>;
 }
 
-export type ContextProviderProps<P, T> = Props<{
+export type ContextProviderProps<P, T> = {
   value: P;
   children: T;
-}>;
-
-export type DemocratComponentFunction<P, T> = (props: P) => T;
-
-export type DemocratComponent<P, T> = {
-  Component: DemocratComponentFunction<P, T>;
-  [DEMOCRAT_COMPONENT]: true;
-  createElement: P extends void
-    ? () => DemocratElementComponent<P, T>
-    : (props: P) => DemocratElementComponent<P, T>;
-  useChildren: P extends void ? () => T : (props: P) => T;
 };
 
-export interface DemocratElementComponent<P, T> {
+export type FunctionComponent<P, T> = (props: P) => T;
+
+export type Factory<P, T> = {
+  Component: FunctionComponent<P, T>;
+  [DEMOCRAT_COMPONENT]: true;
+  createElement: P extends void
+    ? (props?: undefined | {}, key?: Key) => ElementComponent<T>
+    : (props: P, key?: Key) => ElementComponent<T>;
+  useChildren: P extends void
+    ? (props?: undefined | {}, key?: Key) => T
+    : (props: P, key?: Key) => T;
+};
+
+export type AnyProps = { [key: string]: any };
+
+export interface ElementComponent<T> {
   [DEMOCRAT_ELEMENT]: true;
-  type: Component<P, T>;
-  props: P;
+  type: FunctionComponent<unknown, T>;
+  props: AnyProps;
   key: Key;
 }
 
-export interface DemocratElementProvider<P, T> {
+export interface ElementProvider<T> {
   [DEMOCRAT_ELEMENT]: true;
-  type: DemocratContextProvider<P>;
-  props: ContextProviderProps<P, T>;
+  type: DemocratContextProvider<unknown>;
+  props: ContextProviderProps<unknown, T>;
   key: Key;
 }
+
+export type Element<T> = ElementComponent<T> | ElementProvider<T>;
 
 export interface DemocratRootElement {
   [DEMOCRAT_ELEMENT]: true;
   [DEMOCRAT_ROOT]: true;
   children: Children;
 }
-
-/**
- * For components: P is Props, T is return type
- * For contexts: P is Context value, T is return type
- */
-export type DemocratElement<P, T> = DemocratElementComponent<P, T> | DemocratElementProvider<P, T>;
 
 export interface Context<T, HasDefault extends boolean = boolean> {
   [DEMOCRAT_CONTEXT]: {
@@ -91,13 +93,13 @@ export interface Context<T, HasDefault extends boolean = boolean> {
 }
 
 export type Children =
-  | DemocratElement<any, any>
+  | Element<any>
   | null
   | Array<Children>
   | Map<any, Children>
   | { [key: string]: Children };
 
-export type ResolveType<C> = C extends DemocratElement<any, infer T>
+export type ResolveType<C> = C extends Element<infer T>
   ? T
   : C extends null
   ? null
@@ -175,12 +177,6 @@ export type HooksData =
 export type OnIdleExec = () => void;
 export type OnIdle = (exec: OnIdleExec) => void;
 
-export type Props<P> = P & { key?: string | number };
-
-export type Component<P, S> = (props: Props<P>) => S;
-
-export type AllOptional<P = {}> = {} extends P ? true : P extends Required<P> ? false : true;
-
 export type TreeElementState = 'created' | 'stable' | 'updated' | 'removed';
 
 export type TreeElementCommon = {
@@ -215,12 +211,12 @@ export type TreeElementData = {
   };
   NULL: {};
   PROVIDER: {
-    element: DemocratElementProvider<any, any>;
+    element: ElementProvider<any>;
     children: TreeElement;
   };
   CHILD: {
     snapshot: TreeElementSnapshot<'CHILD'> | undefined;
-    element: DemocratElementComponent<any, any>;
+    element: ElementComponent<any>;
     hooks: Array<HooksData> | null;
     nextHooks: Array<HooksData>;
     // is set to true when the component or one of it's children has a new state
@@ -249,8 +245,8 @@ type CreateTreeElementMap<T extends { [K in TreeElementType]: any }> = T;
 export type TreeElementRaw = CreateTreeElementMap<{
   ROOT: DemocratRootElement;
   NULL: null;
-  CHILD: DemocratElementComponent<any, any>;
-  PROVIDER: DemocratElementProvider<any, any>;
+  CHILD: ElementComponent<any>;
+  PROVIDER: ElementProvider<any>;
   ARRAY: Array<any>;
   OBJECT: { [key: string]: any };
   MAP: Map<any, any>;

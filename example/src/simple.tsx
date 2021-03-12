@@ -1,6 +1,6 @@
-import { useState, useCallback, useMemo, createComponent, createStore } from '../../src';
+import { useState, useCallback, useMemo, createFactory, createStore } from '../../src';
 
-const Store = createComponent(() => {
+const Store = createFactory(() => {
   const [count, setCount] = useState(0);
 
   const increment = useCallback(() => setCount(prev => prev + 1), []);

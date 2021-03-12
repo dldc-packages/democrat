@@ -5,10 +5,10 @@ import {
   useMemo,
   createStore,
   useChildren,
-  createComponent,
+  createFactory,
 } from '../../src';
 
-const Counter = createComponent(({ index }: { index: number }) => {
+const Counter = createFactory(({ index }: { index: number }) => {
   const [count, setCounter] = useState(0);
 
   const increment = useCallback(() => {
@@ -39,7 +39,7 @@ const Counter = createComponent(({ index }: { index: number }) => {
   );
 });
 
-const AppStore = createComponent(() => {
+const AppStore = createFactory(() => {
   const [count, setCounter] = useState(3);
 
   const increment = useCallback(() => {

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import {
   createStore,
-  createComponent,
+  createFactory,
   useState,
   useEffect,
   useLayoutEffect,
@@ -15,7 +15,7 @@ const log = (...vals) => console.log(logCount++, ...vals);
 
 let nextNum = 0;
 
-const Counter = createComponent(() => {
+const Counter = createFactory(() => {
   const [count, setCounter] = useState(0);
 
   const num = nextNum++;
@@ -50,7 +50,7 @@ const Counter = createComponent(() => {
   return null;
 });
 
-const AppStore = createComponent(() => {
+const AppStore = createFactory(() => {
   const [count, setCounter] = useState(0);
 
   log('App: render', count, typeof setCounter);

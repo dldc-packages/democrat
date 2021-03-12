@@ -1,6 +1,6 @@
 import {
   createContext,
-  createComponent,
+  createFactory,
   useContext,
   useChildren,
   createStore,
@@ -13,7 +13,7 @@ const Num1Ctx = createContext<number>();
 // Context with a default value
 const Num2Ctx = createContext<number>(42);
 
-const Child = createComponent(() => {
+const Child = createFactory(() => {
   // num1a can be undefined if there are no provider
   const num1a = useContext(Num1Ctx);
 
@@ -34,7 +34,7 @@ const Child = createComponent(() => {
   };
 });
 
-const Parent = createComponent(() => {
+const Parent = createFactory(() => {
   const state = useChildren({
     withContext: Num1Ctx.Provider.createElement({
       value: 4,

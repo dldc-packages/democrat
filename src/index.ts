@@ -3,11 +3,10 @@ export * from './Hooks';
 
 export {
   Children,
-  Component,
   Context,
-  DemocratElement,
-  DemocratComponent,
-  DemocratComponentFunction,
+  FunctionComponent,
+  Element,
+  Factory,
   DependencyList,
   Dispatch,
   DispatchWithoutAction,
@@ -18,7 +17,6 @@ export {
   MutableRefObject,
   Patch,
   Patches,
-  Props,
   Reducer,
   ReducerAction,
   ReducerPatch,

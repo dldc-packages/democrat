@@ -30,6 +30,7 @@
     "pub": "yarn build && np",
     "start": "tsdx watch",
     "test": "tsdx test --coverage",
+    "typecheck": "tsc --noEmit",
     "test:watch": "tsdx test --watch",
     "example:run": "esbuild example/index.tsx --servedir=example --outdir=example --bundle --define:process.env.NODE_ENV=\"'development'\""
   },

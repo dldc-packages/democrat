@@ -1,13 +1,6 @@
-import {
-  createStore,
-  useCallback,
-  useChildren,
-  useMemo,
-  useState,
-  createComponent,
-} from '../../src';
+import { createStore, useCallback, useChildren, useMemo, useState, createFactory } from '../../src';
 
-const Counter = createComponent(() => {
+const Counter = createFactory(() => {
   const [count, setCount] = useState(1);
 
   const increment = useCallback(() => setCount(prev => prev + 1), []);
@@ -23,7 +16,7 @@ const Counter = createComponent(() => {
   return result;
 });
 
-const Store = createComponent(() => {
+const Store = createFactory(() => {
   const counter = useChildren(Counter.createElement());
   const countersObject = useChildren({
     counterA: Counter.createElement(),

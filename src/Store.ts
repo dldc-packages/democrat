@@ -16,14 +16,15 @@ import {
   Patch,
   Patches,
   Snapshot,
-  DemocratComponentFunction,
-  DemocratComponent,
+  FunctionComponent,
+  Factory,
+  Key,
 } from './types';
 import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 import * as Hooks from './Hooks';
 import { useChildren } from './Hooks';
 
-export { isValidElement, createElement, createContext } from './utils';
+export { isValidElement, createContext, createElement } from './utils';
 
 export interface Store<S> {
   render: <C extends Children>(rootChildren: C) => void;
@@ -46,17 +47,15 @@ export interface CreateStoreOptions {
   snapshot?: Snapshot;
 }
 
-export function createComponent<P = void, T = unknown>(
-  fn: DemocratComponentFunction<P, T>
-): DemocratComponent<P, T> {
+export function createFactory<P = void, T = unknown>(fn: FunctionComponent<P, T>): Factory<P, T> {
   return {
     [DEMOCRAT_COMPONENT]: true,
     Component: fn,
-    createElement: ((props: any) => {
-      return createElement(fn, props);
+    createElement: ((props: any, key: Key) => {
+      return createElement(fn, props, key);
     }) as any,
-    useChildren: ((props: any) => {
-      return useChildren(createElement(fn, props));
+    useChildren: ((props: any, key: Key) => {
+      return useChildren(createElement(fn, props, key));
     }) as any,
   };
 }
