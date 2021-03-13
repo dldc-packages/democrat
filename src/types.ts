@@ -49,24 +49,16 @@ export type ContextProviderProps<P, T> = {
 
 export type FunctionComponent<P, T> = (props: P) => T;
 
-export type FactoryInternal<Fn extends FunctionComponent<any, any>> = Fn extends FunctionComponent<
-  infer P,
-  infer T
->
-  ? {
-      Component: Fn;
-      [DEMOCRAT_COMPONENT]: true;
-      createElement: P extends void
-        ? (props?: undefined | {}, key?: Key) => ElementComponent<T>
-        : (props: P, key?: Key) => ElementComponent<T>;
-      createElementTyped: <R>(runner: (create: Fn) => R, key?: Key) => ElementComponent<R>;
-      useChildren: P extends void
-        ? (props?: undefined | {}, key?: Key) => T
-        : (props: P, key?: Key) => T;
-    }
-  : never;
-
-export type Factory<P, T> = FactoryInternal<FunctionComponent<P, T>>;
+export type Factory<P, T> = {
+  Component: FunctionComponent<P, T>;
+  [DEMOCRAT_COMPONENT]: true;
+  createElement: P extends void
+    ? (props?: undefined | {}, key?: Key) => ElementComponent<T>
+    : (props: P, key?: Key) => ElementComponent<T>;
+  useChildren: P extends void
+    ? (props?: undefined | {}, key?: Key) => T
+    : (props: P, key?: Key) => T;
+};
 
 export type AnyProps = { [key: string]: any };
 
