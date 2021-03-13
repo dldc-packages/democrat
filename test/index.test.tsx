@@ -20,6 +20,14 @@ test('basic count state', async () => {
   expect(onRender).toHaveBeenCalledTimes(2);
 });
 
+test('generic component', async () => {
+  const Counter = Democrat.createGenericFactory(function<R>(props: { val: R }): R {
+    return props.val;
+  });
+  const store = Democrat.createStore(Counter.createElement(c => c({ val: 42 })));
+  expect(store.getState()).toEqual(42);
+});
+
 test('subscribe', async () => {
   const onRender = jest.fn();
   const Counter = Democrat.createFactory(() => {

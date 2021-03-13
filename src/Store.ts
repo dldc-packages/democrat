@@ -19,6 +19,7 @@ import {
   FunctionComponent,
   Factory,
   Key,
+  GenericFactory,
 } from './types';
 import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 import * as Hooks from './Hooks';
@@ -56,6 +57,21 @@ export function createFactory<P = void, T = unknown>(fn: FunctionComponent<P, T>
     }) as any,
     useChildren: ((props: any, key: Key) => {
       return useChildren(createElement(fn, props, key));
+    }) as any,
+  };
+}
+
+export function createGenericFactory<Fn extends FunctionComponent<any, any>>(
+  fn: Fn
+): GenericFactory<Fn> {
+  return {
+    [DEMOCRAT_COMPONENT]: true,
+    Component: fn,
+    createElement: ((runner: any, key: Key) => {
+      return runner((props: any) => createElement(fn, props, key));
+    }) as any,
+    useChildren: ((runner: any, key: Key) => {
+      return useChildren(runner((props: any) => createElement(fn, props, key)));
     }) as any,
   };
 }

@@ -60,6 +60,13 @@ export type Factory<P, T> = {
     : (props: P, key?: Key) => T;
 };
 
+export type GenericFactory<Fn extends FunctionComponent<any, any>> = {
+  Component: Fn;
+  [DEMOCRAT_COMPONENT]: true;
+  createElement: <R>(runner: (create: Fn) => R, key?: Key) => ElementComponent<R>;
+  useChildren: <R>(runner: (create: Fn) => R, key?: Key) => R;
+};
+
 export type AnyProps = { [key: string]: any };
 
 export interface ElementComponent<T> {
