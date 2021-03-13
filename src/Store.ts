@@ -19,6 +19,7 @@ import {
   FunctionComponent,
   Factory,
   Key,
+  FactoryInternal,
 } from './types';
 import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 import * as Hooks from './Hooks';
@@ -47,17 +48,23 @@ export interface CreateStoreOptions {
   snapshot?: Snapshot;
 }
 
-export function createFactory<P = void, T = unknown>(fn: FunctionComponent<P, T>): Factory<P, T> {
-  return {
+export function createFactory<Fn extends FunctionComponent<unknown, unknown>>(
+  fn: Fn
+): FactoryInternal<Fn> {
+  const fact: Factory<unknown, unknown> = {
     [DEMOCRAT_COMPONENT]: true,
     Component: fn,
     createElement: ((props: any, key: Key) => {
       return createElement(fn, props, key);
     }) as any,
+    createElementTyped: (runner, key) => {
+      return runner(props => createElement(fn, props, key)) as any;
+    },
     useChildren: ((props: any, key: Key) => {
       return useChildren(createElement(fn, props, key));
     }) as any,
   };
+  return fact as any;
 }
 
 export function createStore<C extends Children>(
