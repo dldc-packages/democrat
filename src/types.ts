@@ -59,7 +59,7 @@ export type FactoryInternal<Fn extends FunctionComponent<any, any>> = Fn extends
       createElement: P extends void
         ? (props?: undefined | {}, key?: Key) => ElementComponent<T>
         : (props: P, key?: Key) => ElementComponent<T>;
-      createElementTyped: <R>(runner: (create: Fn) => R, key?: Key) => ElementComponent<T>;
+      createElementTyped: <R>(runner: (create: Fn) => R, key?: Key) => ElementComponent<R>;
       useChildren: P extends void
         ? (props?: undefined | {}, key?: Key) => T
         : (props: P, key?: Key) => T;
