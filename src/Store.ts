@@ -48,9 +48,7 @@ export interface CreateStoreOptions {
   snapshot?: Snapshot;
 }
 
-export function createFactory<Fn extends FunctionComponent<unknown, unknown>>(
-  fn: Fn
-): FactoryInternal<Fn> {
+export function createFactory<Fn extends FunctionComponent<any, any>>(fn: Fn): FactoryInternal<Fn> {
   const fact: Factory<unknown, unknown> = {
     [DEMOCRAT_COMPONENT]: true,
     Component: fn,
