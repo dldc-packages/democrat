@@ -24,11 +24,11 @@ import {
   RefHookData,
   Context,
   ContextHookData,
-} from './types';
-import { getCurrentRootInstance } from './Global';
-import { ChildrenUtils } from './ChildrenUtils';
-import { getPatchPath, depsChanged } from './utils';
-import { DEMOCRAT_CONTEXT } from './symbols';
+} from './types.js';
+import { getCurrentRootInstance } from './Global.js';
+import { ChildrenUtils } from './ChildrenUtils.js';
+import { getPatchPath, depsChanged } from './utils.js';
+import { DEMOCRAT_CONTEXT } from './symbols.js';
 
 export function useChildren<C extends Children>(children: C): ResolveType<C> {
   const root = getCurrentRootInstance();
@@ -88,6 +88,7 @@ export function useReducer<R extends Reducer<any, any>>(
   initializer?: undefined
 ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
 // implementation
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function useReducer(reducer: any, initialArg: any, init?: any): [any, Dispatch<any>] {
   const root = getCurrentRootInstance();
   const hook = root.getCurrentHook();
@@ -105,7 +106,7 @@ export function useReducer(reducer: any, initialArg: any, init?: any): [any, Dis
       initialState = snapshot.value;
     }
     const value = initialState;
-    const dispatch: Dispatch<any> = action => {
+    const dispatch: Dispatch<any> = (action) => {
       if (instance.state === 'removed') {
         throw new Error(`Cannot dispatch on an unmounted component`);
       }
@@ -147,7 +148,7 @@ export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateA
     if (snapshot && snapshot.type === 'STATE') {
       value = snapshot.value;
     }
-    const setValue: Dispatch<SetStateAction<S>> = value => {
+    const setValue: Dispatch<SetStateAction<S>> = (value) => {
       if (instance.state === 'removed') {
         throw new Error(`Cannot set state of an unmounted component`);
       }

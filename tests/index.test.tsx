@@ -1,5 +1,5 @@
-import * as Democrat from '../src';
-import { waitForNextState, waitForNextTick, mapMap, removeFunctionsDeep } from './utils';
+import * as Democrat from '../src/index.js';
+import { waitForNextState, waitForNextTick, mapMap, removeFunctionsDeep } from './utils.js';
 
 test('basic count state', async () => {
   const onRender = jest.fn();
@@ -21,10 +21,10 @@ test('basic count state', async () => {
 });
 
 test('generic component', async () => {
-  const Counter = Democrat.createGenericFactory(function<R>(props: { val: R }): R {
+  const Counter = Democrat.createGenericFactory(function <R>(props: { val: R }): R {
     return props.val;
   });
-  const store = Democrat.createStore(Counter.createElement(c => c({ val: 42 })));
+  const store = Democrat.createStore(Counter.createElement((c) => c({ val: 42 })));
   expect(store.getState()).toEqual(42);
 });
 
@@ -284,7 +284,7 @@ test('multiple counters (array children)', async () => {
     );
 
     const addCounter = Democrat.useCallback(() => {
-      setNumberOfCounter(v => v + 1);
+      setNumberOfCounter((v) => v + 1);
     }, []);
 
     return {
@@ -382,7 +382,7 @@ test('multiple counters (object children update)', async () => {
 
     const sum = counters.counterA.count + counters.counterB.count;
 
-    const toggle = Democrat.useCallback(() => setShowCounterC(prev => !prev), []);
+    const toggle = Democrat.useCallback(() => setShowCounterC((prev) => !prev), []);
 
     return { counters, sum, toggle };
   };
@@ -729,10 +729,10 @@ test('array of children', async () => {
     const [items, setItems] = Democrat.useState([23, 5, 7]);
 
     const addItem = Democrat.useCallback((item: number) => {
-      setItems(prev => [...prev, item]);
+      setItems((prev) => [...prev, item]);
     }, []);
 
-    const child = Democrat.useChildren(items.map(v => Democrat.createElement(Child, { val: v })));
+    const child = Democrat.useChildren(items.map((v) => Democrat.createElement(Child, { val: v })));
 
     return Democrat.useMemo(
       () => ({
@@ -758,11 +758,11 @@ test('array of children with keys', async () => {
     const [items, setItems] = Democrat.useState([23, 5, 7]);
 
     const addItem = Democrat.useCallback((item: number) => {
-      setItems(prev => [item, ...prev]);
+      setItems((prev) => [item, ...prev]);
     }, []);
 
     const child = Democrat.useChildren(
-      items.map(v => Democrat.createElement(Child, { val: v }, v))
+      items.map((v) => Democrat.createElement(Child, { val: v }, v))
     );
 
     return Democrat.useMemo(
@@ -858,16 +858,16 @@ test('update a Map', async () => {
     const children = Democrat.useChildren(mapMap(ids, () => Democrat.createElement(Child, {})));
 
     const addChild = Democrat.useCallback((id: string) => {
-      setIds(prev => {
-        const next = mapMap(prev, v => v);
+      setIds((prev) => {
+        const next = mapMap(prev, (v) => v);
         next.set(id, null);
         return next;
       });
     }, []);
 
     const removeChild = Democrat.useCallback((id: string) => {
-      setIds(prev => {
-        const next = mapMap(prev, v => v);
+      setIds((prev) => {
+        const next = mapMap(prev, (v) => v);
         next.delete(id);
         return next;
       });
@@ -895,10 +895,7 @@ test('update a Map', async () => {
   store.getState().removeChild('a');
   await waitForNextTick();
   expect(store.getState().children.size).toBe(1);
-  store
-    .getState()
-    .children.get('b')!
-    .setCount(42);
+  store.getState().children.get('b')!.setCount(42);
   await waitForNextTick();
   expect(store.getState().children.get('b')!.count).toBe(42);
 });
@@ -922,16 +919,16 @@ test('can save and restore unsing snapshot', async () => {
     const children = Democrat.useChildren(mapMap(ids, () => Democrat.createElement(Child, {})));
 
     const addChild = Democrat.useCallback((id: string) => {
-      setIds(prev => {
-        const next = mapMap(prev, v => v);
+      setIds((prev) => {
+        const next = mapMap(prev, (v) => v);
         next.set(id, null);
         return next;
       });
     }, []);
 
     const removeChild = Democrat.useCallback((id: string) => {
-      setIds(prev => {
-        const next = mapMap(prev, v => v);
+      setIds((prev) => {
+        const next = mapMap(prev, (v) => v);
         next.delete(id);
         return next;
       });
@@ -957,10 +954,7 @@ test('can save and restore unsing snapshot', async () => {
   await waitForNextTick();
   store.getState().addChild('b');
   await waitForNextTick();
-  store
-    .getState()
-    .children.get('b')!
-    .setCount(42);
+  store.getState().children.get('b')!.setCount(42);
   await waitForNextTick();
   const finalState = removeFunctionsDeep(store.getState());
   expect(finalState).toMatchInlineSnapshot(`

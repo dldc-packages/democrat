@@ -159,7 +159,7 @@ import * as Democrat from 'democrat';
 const Counter = () => {
   const [count, setCount] = Democrat.useState(1);
 
-  const increment = Democrat.useCallback(() => setCount(prev => prev + 1), []);
+  const increment = Democrat.useCallback(() => setCount((prev) => prev + 1), []);
 
   const result = Democrat.useMemo(
     () => ({

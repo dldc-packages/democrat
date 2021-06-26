@@ -1,4 +1,4 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols.js';
 import {
   FunctionComponent,
   DependencyList,
@@ -21,12 +21,14 @@ import {
   ContextProviderProps,
 } from './types';
 
-export function isValidElement(maybe: any): maybe is Element<any> {
-  return maybe && maybe[DEMOCRAT_ELEMENT] === true;
+export function isValidElement(maybe: unknown): maybe is Element<any> {
+  return Boolean(maybe && (maybe as any)[DEMOCRAT_ELEMENT] === true);
 }
 
-export function isRootElement(maybe: any): maybe is DemocratRootElement {
-  return maybe && maybe[DEMOCRAT_ELEMENT] === true && maybe[DEMOCRAT_ROOT] === true;
+export function isRootElement(maybe: unknown): maybe is DemocratRootElement {
+  return Boolean(
+    maybe && (maybe as any)[DEMOCRAT_ELEMENT] === true && (maybe as any)[DEMOCRAT_ROOT] === true
+  );
 }
 
 /**
@@ -44,7 +46,7 @@ export function createElement<P, T>(
   props: ContextProviderProps<P, T>,
   key?: string | number | undefined
 ): Element<ResolveType<T>>;
-export function createElement<P extends {}, T>(
+export function createElement<P, T>(
   component: FunctionComponent<P, T> | DemocratContextProvider<P>,
   props: P = {} as any,
   key?: string | number | undefined
@@ -181,7 +183,7 @@ export function createRootTreeElement(data: {
   applyPatches: (patches: Patches) => void;
 }): TreeElement<'ROOT'> {
   let reactHooksSupported: boolean = false;
-  let renderingStack: Array<TreeElement> = [];
+  const renderingStack: Array<TreeElement> = [];
 
   const rootTreeElement: TreeElement<'ROOT'> = {
     type: 'ROOT',
@@ -250,7 +252,7 @@ export function createRootTreeElement(data: {
         'useLayoutEffect',
         'useRef',
       ];
-      methods.forEach(name => {
+      methods.forEach((name) => {
         const originalFn = ReactInstance[name];
         ReactInstance[name] = (...args: Array<any>) => {
           if (isRendering()) {
@@ -311,8 +313,8 @@ export function sameArrayStructure(prev: Array<TreeElement>, children: Array<any
   if (prev.length !== children.length) {
     return false;
   }
-  const prevKeys = prev.map(item => (item.type === 'CHILD' ? item.element.key : undefined));
-  const childrenKeys = children.map(item => (isValidElement(item) ? item.key : undefined));
+  const prevKeys = prev.map((item) => (item.type === 'CHILD' ? item.element.key : undefined));
+  const childrenKeys = children.map((item) => (isValidElement(item) ? item.key : undefined));
   return arrayShallowEqual(prevKeys, childrenKeys);
 }
 
@@ -329,7 +331,7 @@ export function sameMapStructure(prev: Map<any, TreeElement>, children: Map<any,
   return allIn;
 }
 
-export function registerContextSub(instance: TreeElement<'CHILD'>, context: Context<any>) {
+export function registerContextSub(instance: TreeElement<'CHILD'>, context: Context<any>): void {
   const root = instance.root!;
   if (!root.context.has(context)) {
     root.context.set(context, new Set());
@@ -337,7 +339,7 @@ export function registerContextSub(instance: TreeElement<'CHILD'>, context: Cont
   root.context.get(context)!.add(instance);
 }
 
-export function unregisterContextSub(instance: TreeElement<'CHILD'>, context: Context<any>) {
+export function unregisterContextSub(instance: TreeElement<'CHILD'>, context: Context<any>): void {
   const root = instance.root!;
   if (!root.context.has(context)) {
     return;
@@ -349,11 +351,11 @@ export function unregisterContextSub(instance: TreeElement<'CHILD'>, context: Co
   }
 }
 
-export function markContextSubDirty(instance: TreeElement, context: Context<any>) {
+export function markContextSubDirty(instance: TreeElement, context: Context<any>): void {
   const root = instance.root!;
   const ctx = root.context.get(context);
   if (ctx) {
-    ctx.forEach(c => {
+    ctx.forEach((c) => {
       if (isDescendantOf(c, instance)) {
         root.markDirty(c, instance);
       }
@@ -375,7 +377,7 @@ export function getInstanceKey(instance: TreeElement): string | number | undefin
 }
 
 export function getPatchPath(instance: TreeElement): Array<TreeElementPath> {
-  let path: Array<TreeElementPath> = [];
+  const path: Array<TreeElementPath> = [];
   let current: TreeElement | null = instance;
   while (current !== null && current.type !== 'ROOT') {
     path.unshift(current.path);
@@ -387,20 +389,20 @@ export function getPatchPath(instance: TreeElement): Array<TreeElementPath> {
   return path;
 }
 
-export function isPlainObject(o: any): o is object {
-  let ctor, prot;
-
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function isPlainObject(o: unknown): o is object {
   if (isObjectObject(o) === false) return false;
 
   // If has modified constructor
-  ctor = o.constructor;
+  const ctor = (o as any).constructor;
   if (typeof ctor !== 'function') return false;
 
   // If has modified prototype
-  prot = ctor.prototype;
+  const prot = ctor.prototype;
   if (isObjectObject(prot) === false) return false;
 
   // If constructor does not have an Object-specific method
+  // eslint-disable-next-line no-prototype-builtins
   if (prot.hasOwnProperty('isPrototypeOf') === false) {
     return false;
   }

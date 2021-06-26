@@ -1,5 +1,11 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /* istanbul ignore next */
-import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT, DEMOCRAT_COMPONENT } from './symbols';
+import {
+  DEMOCRAT_ELEMENT,
+  DEMOCRAT_CONTEXT,
+  DEMOCRAT_ROOT,
+  DEMOCRAT_COMPONENT,
+} from './symbols.js';
 
 export type Dispatch<A> = (value: A) => void;
 export type SetStateAction<S> = S | ((prevState: S) => S);
@@ -53,10 +59,10 @@ export type Factory<P, T> = {
   Component: FunctionComponent<P, T>;
   [DEMOCRAT_COMPONENT]: true;
   createElement: P extends void
-    ? (props?: undefined | {}, key?: Key) => ElementComponent<T>
+    ? (props?: undefined | Record<string, unknown>, key?: Key) => ElementComponent<T>
     : (props: P, key?: Key) => ElementComponent<T>;
   useChildren: P extends void
-    ? (props?: undefined | {}, key?: Key) => T
+    ? (props?: undefined | Record<string, unknown>, key?: Key) => T
     : (props: P, key?: Key) => T;
 };
 
@@ -277,9 +283,8 @@ type TreeElementPathResolved = {
   } & TreeElementPathData[K];
 };
 
-export type TreeElementPath<
-  K extends TreeElementType = TreeElementType
-> = TreeElementPathResolved[K];
+export type TreeElementPath<K extends TreeElementType = TreeElementType> =
+  TreeElementPathResolved[K];
 
 export type HookSnapshot =
   | { type: 'CHILDREN'; child: TreeElementSnapshot }
@@ -309,16 +314,14 @@ type TreeElementSnapshotResolved = {
   } & TreeElementSnapshotData[K];
 };
 
-export type TreeElementSnapshot<
-  K extends TreeElementType = TreeElementType
-> = TreeElementSnapshotResolved[K];
+export type TreeElementSnapshot<K extends TreeElementType = TreeElementType> =
+  TreeElementSnapshotResolved[K];
 
 export type Snapshot = TreeElementSnapshot<'ROOT'>;
 
 export type ReducerWithoutAction<S> = (prevState: S) => S;
-export type ReducerStateWithoutAction<
-  R extends ReducerWithoutAction<any>
-> = R extends ReducerWithoutAction<infer S> ? S : never;
+export type ReducerStateWithoutAction<R extends ReducerWithoutAction<any>> =
+  R extends ReducerWithoutAction<infer S> ? S : never;
 export type DispatchWithoutAction = () => void;
 export type Reducer<S, A> = (prevState: S, action: A) => S;
 export type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;

@@ -1,5 +1,5 @@
-export * from './Store';
-export * from './Hooks';
+export * from './Store.js';
+export * from './Hooks.js';
 
 export {
   Children,

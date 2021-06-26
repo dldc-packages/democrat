@@ -8,7 +8,7 @@ import {
   TreeElementPath,
   TreeElementSnapshot,
   HookSnapshot,
-} from './types';
+} from './types.js';
 import {
   isValidElement,
   objectShallowEqual,
@@ -27,7 +27,7 @@ import {
   isPlainObject,
   getInstanceKey,
   isElementInstance,
-} from './utils';
+} from './utils.js';
 
 export const ChildrenUtils = {
   mount,
@@ -87,10 +87,10 @@ const CHILDREN_LIFECYCLES: {
     cleanup: (tree, type, force) => {
       cleanup(tree.children, type, force);
     },
-    access: instance => {
+    access: (instance) => {
       return instance.children;
     },
-    snapshot: instance => {
+    snapshot: (instance) => {
       return {
         type: 'ROOT',
         children: snapshot(instance.children),
@@ -105,8 +105,10 @@ const CHILDREN_LIFECYCLES: {
       });
       return item;
     },
-    update: tree => tree,
-    effect: () => {},
+    update: (tree) => tree,
+    effect: () => {
+      //
+    },
     cleanup: () => {
       return;
     },
@@ -153,7 +155,7 @@ const CHILDREN_LIFECYCLES: {
     },
     effect: (tree, type) => {
       if (tree.hooks) {
-        tree.hooks.forEach(hook => {
+        tree.hooks.forEach((hook) => {
           if (hook.type === type && hook.dirty) {
             hook.dirty = false;
             hook.cleanup = hook.effect() || undefined;
@@ -167,7 +169,7 @@ const CHILDREN_LIFECYCLES: {
     },
     cleanup: (tree, type, force) => {
       if (tree.hooks) {
-        tree.hooks.forEach(hook => {
+        tree.hooks.forEach((hook) => {
           if (hook.type === 'CHILDREN') {
             cleanup(hook.tree, type, force);
             return;
@@ -188,26 +190,24 @@ const CHILDREN_LIFECYCLES: {
       }
       return hook.tree;
     },
-    snapshot: instance => {
+    snapshot: (instance) => {
       return {
         type: 'CHILD',
         hooks:
           instance.hooks === null
             ? []
-            : instance.hooks.map(
-                (hook): HookSnapshot => {
-                  if (hook.type === 'CHILDREN') {
-                    return { type: 'CHILDREN', child: snapshot(hook.tree) };
-                  }
-                  if (hook.type === 'STATE') {
-                    return { type: 'STATE', value: hook.value };
-                  }
-                  if (hook.type === 'REDUCER') {
-                    return { type: 'REDUCER', value: hook.value };
-                  }
-                  return null;
+            : instance.hooks.map((hook): HookSnapshot => {
+                if (hook.type === 'CHILDREN') {
+                  return { type: 'CHILDREN', child: snapshot(hook.tree) };
                 }
-              ),
+                if (hook.type === 'STATE') {
+                  return { type: 'STATE', value: hook.value };
+                }
+                if (hook.type === 'REDUCER') {
+                  return { type: 'REDUCER', value: hook.value };
+                }
+                return null;
+              }),
       };
     },
   },
@@ -224,7 +224,7 @@ const CHILDREN_LIFECYCLES: {
           return mount(item, tree, { type: 'ARRAY', index }, snap);
         });
       });
-      tree.value = tree.children.map(item => item.value);
+      tree.value = tree.children.map((item) => item.value);
       return tree;
     },
     update: (tree, element, path) => {
@@ -248,7 +248,7 @@ const CHILDREN_LIFECYCLES: {
         tree.state = updated ? 'updated' : 'stable';
         if (updated) {
           // Update value
-          tree.value = tree.children.map(v => v.value);
+          tree.value = tree.children.map((v) => v.value);
         }
         return tree;
       }
@@ -258,7 +258,7 @@ const CHILDREN_LIFECYCLES: {
         value: null,
         previous: tree,
       });
-      const prevKeys = tree.children.map(item => getInstanceKey(item));
+      const prevKeys = tree.children.map((item) => getInstanceKey(item));
       nextTree.children = tree.root.withGlobalRenderingInstance(nextTree, () => {
         return element.map((item, index) => {
           const key = isValidElement(item) ? item.key : undefined;
@@ -272,11 +272,11 @@ const CHILDREN_LIFECYCLES: {
           return update(prev, item, nextTree, { type: 'ARRAY', index });
         });
       });
-      nextTree.value = nextTree.children.map(v => v.value);
+      nextTree.value = nextTree.children.map((v) => v.value);
       // the old tree need to be processed
       tree.state = 'updated';
       // mark children not in the new tree as removed
-      tree.children.forEach(prev => {
+      tree.children.forEach((prev) => {
         if (nextTree.children.indexOf(prev) < 0) {
           prev.state = 'removed';
         }
@@ -284,22 +284,22 @@ const CHILDREN_LIFECYCLES: {
       return nextTree;
     },
     effect: (tree, type) => {
-      tree.children.forEach(child => {
+      tree.children.forEach((child) => {
         effectInternal(child, type);
       });
     },
     cleanup: (tree, type, force) => {
-      tree.children.forEach(child => {
+      tree.children.forEach((child) => {
         cleanup(child, type, force);
       });
     },
     access: (instance, path) => {
       return instance.children[path.index] || null;
     },
-    snapshot: instance => {
+    snapshot: (instance) => {
       return {
         type: 'ARRAY',
-        children: instance.children.map(item => snapshot(item)),
+        children: instance.children.map((item) => snapshot(item)),
       };
     },
   },
@@ -316,7 +316,7 @@ const CHILDREN_LIFECYCLES: {
           return mount(item, tree, { type: 'OBJECT', objectKey: key }, snap);
         })
       );
-      tree.value = mapObject(tree.children, v => v.value);
+      tree.value = mapObject(tree.children, (v) => v.value);
       return tree;
     },
     update: (tree, element, path) => {
@@ -325,7 +325,7 @@ const CHILDREN_LIFECYCLES: {
         // the object has the same structure => update tree object
         let updated = false;
         tree.root.withGlobalRenderingInstance(tree, () => {
-          Object.keys(element).forEach(key => {
+          Object.keys(element).forEach((key) => {
             const newItem = update(tree.children[key], element[key], tree, {
               type: 'OBJECT',
               objectKey: key,
@@ -339,7 +339,7 @@ const CHILDREN_LIFECYCLES: {
         tree.state = updated ? 'updated' : 'stable';
         if (updated) {
           // Update value
-          tree.value = mapObject(tree.children, v => v.value);
+          tree.value = mapObject(tree.children, (v) => v.value);
         }
         return tree;
       }
@@ -351,7 +351,7 @@ const CHILDREN_LIFECYCLES: {
       });
       const allKeys = new Set([...Object.keys(element), ...Object.keys(tree.children)]);
       tree.root.withGlobalRenderingInstance(nextTree, () => {
-        allKeys.forEach(key => {
+        allKeys.forEach((key) => {
           const prev = tree.children[key];
           const next = element[key];
           if (prev && !next) {
@@ -377,33 +377,33 @@ const CHILDREN_LIFECYCLES: {
           }
         });
       });
-      nextTree.value = mapObject(nextTree.children, v => v.value);
+      nextTree.value = mapObject(nextTree.children, (v) => v.value);
       tree.state = 'updated';
       return nextTree;
     },
     effect: (tree, type) => {
-      Object.keys(tree.children).forEach(key => {
+      Object.keys(tree.children).forEach((key) => {
         effectInternal(tree.children[key], type);
       });
     },
     cleanup: (tree, type, force) => {
       if (force === true || tree.state === 'removed') {
-        Object.keys(tree.children).forEach(key => {
+        Object.keys(tree.children).forEach((key) => {
           cleanup(tree.children[key], type, true);
         });
         return;
       }
-      Object.keys(tree.children).forEach(key => {
+      Object.keys(tree.children).forEach((key) => {
         cleanup(tree.children[key], type, false);
       });
     },
     access: (instance, path) => {
       return instance.children[path.objectKey] || null;
     },
-    snapshot: instance => {
+    snapshot: (instance) => {
       return {
         type: 'OBJECT',
-        children: mapObject(instance.children, item => snapshot(item)),
+        children: mapObject(instance.children, (item) => snapshot(item)),
       };
     },
   },
@@ -414,7 +414,7 @@ const CHILDREN_LIFECYCLES: {
         return mount(v, parent, { type: 'MAP', mapKey: key }, snap);
       });
       const item = createTreeElement('MAP', parent, path, {
-        value: mapMap(children, item => item.value),
+        value: mapMap(children, (item) => item.value),
         children,
         previous: null,
       });
@@ -437,7 +437,7 @@ const CHILDREN_LIFECYCLES: {
         tree.state = updated ? 'updated' : 'stable';
         if (updated) {
           // Update value
-          tree.value = mapMap(tree.children, v => v.value);
+          tree.value = mapMap(tree.children, (v) => v.value);
         }
         return tree;
       }
@@ -448,7 +448,7 @@ const CHILDREN_LIFECYCLES: {
         previous: tree,
       });
       const allKeys = new Set([...Array.from(element.keys()), ...Array.from(tree.children.keys())]);
-      allKeys.forEach(key => {
+      allKeys.forEach((key) => {
         const prev = tree.children.get(key);
         const next = element.get(key);
         if (prev && !next) {
@@ -473,33 +473,33 @@ const CHILDREN_LIFECYCLES: {
           }
         }
       });
-      nextTree.value = mapMap(nextTree.children, v => v.value);
+      nextTree.value = mapMap(nextTree.children, (v) => v.value);
       tree.state = 'updated';
       return nextTree;
     },
     effect: (tree, type) => {
-      tree.children.forEach(item => {
+      tree.children.forEach((item) => {
         effectInternal(item, type);
       });
     },
     cleanup: (tree, effectType, force) => {
       if (force === true || tree.state === 'removed') {
-        tree.children.forEach(item => {
+        tree.children.forEach((item) => {
           cleanup(item, effectType, true);
         });
         return;
       }
-      tree.children.forEach(item => {
+      tree.children.forEach((item) => {
         cleanup(item, effectType, false);
       });
     },
     access: (instance, path) => {
       return instance.children.get(path.mapKey) || null;
     },
-    snapshot: instance => {
+    snapshot: (instance) => {
       return {
         type: 'MAP',
-        children: mapMap(instance.children, item => snapshot(item)),
+        children: mapMap(instance.children, (item) => snapshot(item)),
       };
     },
   },
@@ -552,10 +552,10 @@ const CHILDREN_LIFECYCLES: {
       }
       cleanup(tree.children, type, false);
     },
-    access: instance => {
+    access: (instance) => {
       return instance.children;
     },
-    snapshot: instance => {
+    snapshot: (instance) => {
       return { type: 'PROVIDER', children: snapshot(instance.children) };
     },
   },
@@ -575,6 +575,7 @@ function snapshot<T extends TreeElementType>(instance: TreeElement<T>): TreeElem
 }
 
 function mount(
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   element: any,
   parent: TreeElement,
   path: TreeElementPath,
@@ -595,6 +596,7 @@ function mount(
  */
 function update(
   instance: TreeElement,
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   element: any,
   parent: TreeElement,
   path: TreeElementPath
@@ -655,17 +657,17 @@ function effectInternal(tree: TreeElement, effecType: EffectType) {
   }
 }
 
-function unmount(tree: TreeElement) {
+function unmount(tree: TreeElement): void {
   cleanup(tree, 'LAYOUT_EFFECT', true);
   cleanup(tree, 'EFFECT', true);
 }
 
-function effects(tree: TreeElement) {
+function effects(tree: TreeElement): void {
   cleanup(tree, 'EFFECT', false);
   effectInternal(tree, 'EFFECT');
 }
 
-function layoutEffects(tree: TreeElement) {
+function layoutEffects(tree: TreeElement): void {
   cleanup(tree, 'LAYOUT_EFFECT', false);
   effectInternal(tree, 'LAYOUT_EFFECT');
 }
@@ -719,7 +721,7 @@ function renderElement<T>(element: ElementComponent<T>, instance: TreeElement<'C
     }
     return acc;
   }, new Set<Context<any>>());
-  allContexts.forEach(c => {
+  allContexts.forEach((c) => {
     if (prevContexts.has(c) && !nextContexts.has(c)) {
       unregisterContextSub(instance, c);
     }

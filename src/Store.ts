@@ -1,6 +1,6 @@
 import { Subscription, Unsubscribe } from 'suub';
-import { ChildrenUtils } from './ChildrenUtils';
-import { setCurrentRootInstance } from './Global';
+import { ChildrenUtils } from './ChildrenUtils.js';
+import { setCurrentRootInstance } from './Global.js';
 import {
   globalSetTimeout,
   globalClearTimeout,
@@ -209,7 +209,7 @@ export function createStore<C extends Children>(
   function flushExecQueue(): boolean {
     renderRequested = false;
     if (execQueue) {
-      execQueue.forEach(exec => {
+      execQueue.forEach((exec) => {
         exec();
       });
       execQueue = null;
@@ -229,7 +229,7 @@ export function createStore<C extends Children>(
 
   function applyPatches(patches: Patches) {
     rootInstance.onIdle(() => {
-      patches.forEach(patch => {
+      patches.forEach((patch) => {
         const instance = ChildrenUtils.access(rootInstance, patch.path);
         if (instance === null || instance.type !== 'CHILD' || instance.hooks === null) {
           return;
