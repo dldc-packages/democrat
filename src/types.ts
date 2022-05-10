@@ -1,11 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 /* istanbul ignore next */
-import {
-  DEMOCRAT_ELEMENT,
-  DEMOCRAT_CONTEXT,
-  DEMOCRAT_ROOT,
-  DEMOCRAT_COMPONENT,
-} from './symbols.js';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT, DEMOCRAT_COMPONENT } from './symbols';
 
 export type Dispatch<A> = (value: A) => void;
 export type SetStateAction<S> = S | ((prevState: S) => S);

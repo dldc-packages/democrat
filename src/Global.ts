@@ -1,4 +1,4 @@
-import { TreeElement } from './types.js';
+import { TreeElement } from './types';
 
 let GLOBAL_STATE: TreeElement<'ROOT'> | null = null;
 

@@ -24,11 +24,11 @@ import {
   RefHookData,
   Context,
   ContextHookData,
-} from './types.js';
-import { getCurrentRootInstance } from './Global.js';
-import { ChildrenUtils } from './ChildrenUtils.js';
-import { getPatchPath, depsChanged } from './utils.js';
-import { DEMOCRAT_CONTEXT } from './symbols.js';
+} from './types';
+import { getCurrentRootInstance } from './Global';
+import { ChildrenUtils } from './ChildrenUtils';
+import { getPatchPath, depsChanged } from './utils';
+import { DEMOCRAT_CONTEXT } from './symbols';
 
 export function useChildren<C extends Children>(children: C): ResolveType<C> {
   const root = getCurrentRootInstance();

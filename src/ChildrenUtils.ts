@@ -8,7 +8,7 @@ import {
   TreeElementPath,
   TreeElementSnapshot,
   HookSnapshot,
-} from './types.js';
+} from './types';
 import {
   isValidElement,
   objectShallowEqual,
@@ -27,7 +27,7 @@ import {
   isPlainObject,
   getInstanceKey,
   isElementInstance,
-} from './utils.js';
+} from './utils';
 
 export const ChildrenUtils = {
   mount,

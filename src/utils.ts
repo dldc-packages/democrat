@@ -1,4 +1,4 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols.js';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols';
 import {
   FunctionComponent,
   DependencyList,

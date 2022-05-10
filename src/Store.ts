@@ -1,6 +1,6 @@
 import { Subscription, Unsubscribe } from 'suub';
-import { ChildrenUtils } from './ChildrenUtils.js';
-import { setCurrentRootInstance } from './Global.js';
+import { ChildrenUtils } from './ChildrenUtils';
+import { setCurrentRootInstance } from './Global';
 import {
   globalSetTimeout,
   globalClearTimeout,
