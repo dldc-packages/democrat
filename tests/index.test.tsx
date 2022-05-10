@@ -1,5 +1,5 @@
-import * as Democrat from '../src/index.js';
-import { waitForNextState, waitForNextTick, mapMap, removeFunctionsDeep } from './utils.js';
+import * as Democrat from '../src/mod';
+import { waitForNextState, waitForNextTick, mapMap, removeFunctionsDeep } from './utils';
 
 test('basic count state', async () => {
   const onRender = jest.fn();

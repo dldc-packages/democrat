@@ -1,4 +1,4 @@
-import { Store } from '../src/index.js';
+import { Store } from '../src/mod';
 
 export function waitForNextState<T>(store: Store<T>): Promise<T> {
   return new Promise((res) => {

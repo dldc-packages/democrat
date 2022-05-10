@@ -1,12 +1,12 @@
-import { Subscription, Unsubscribe } from 'suub';
-import { ChildrenUtils } from './ChildrenUtils.js';
-import { setCurrentRootInstance } from './Global.js';
+import { Subscription, Unsubscribe } from 'https://raw.githubusercontent.com/etienne-dldc/suub/v3.2.1/deno_dist/mod.ts';
+import { ChildrenUtils } from './ChildrenUtils.ts';
+import { setCurrentRootInstance } from './Global.ts';
 import {
   globalSetTimeout,
   globalClearTimeout,
   createRootTreeElement,
   createElement,
-} from './utils';
+} from './utils.ts';
 import {
   OnIdleExec,
   Children,
@@ -20,12 +20,12 @@ import {
   Factory,
   Key,
   GenericFactory,
-} from './types';
-import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
-import * as Hooks from './Hooks';
-import { useChildren } from './Hooks';
+} from './types.ts';
+import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols.ts';
+import * as Hooks from './Hooks.ts';
+import { useChildren } from './Hooks.ts';
 
-export { isValidElement, createContext, createElement } from './utils';
+export { isValidElement, createContext, createElement } from './utils.ts';
 
 export interface Store<S> {
   render: <C extends Children>(rootChildren: C) => void;

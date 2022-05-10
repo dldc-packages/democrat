@@ -1,4 +1,4 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols.js';
+import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols.ts';
 import {
   FunctionComponent,
   DependencyList,
@@ -19,7 +19,7 @@ import {
   Patches,
   ResolveType,
   ContextProviderProps,
-} from './types';
+} from './types.ts';
 
 export function isValidElement(maybe: unknown): maybe is Element<any> {
   return Boolean(maybe && (maybe as any)[DEMOCRAT_ELEMENT] === true);
