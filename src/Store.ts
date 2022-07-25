@@ -91,6 +91,7 @@ export function createStore<C extends Children>(
   let renderRequested = false;
   let flushScheduled = false;
   let patchesQueue: Patches = [];
+  let effectTimer: NodeJS.Timeout | null = null;
 
   const rootElem: DemocratRootElement = {
     [DEMOCRAT_ELEMENT]: true,
@@ -145,7 +146,7 @@ export function createStore<C extends Children>(
     setCurrentRootInstance(null);
     state = rootInstance.value;
     // Schedule setTimeout(() => runEffect)
-    const effectTimer = scheduleEffects();
+    effectTimer = scheduleEffects();
     // run layoutEffects
     ChildrenUtils.layoutEffects(rootInstance);
     // Apply all `setState`
@@ -255,6 +256,9 @@ export function createStore<C extends Children>(
   function destroy() {
     if (destroyed) {
       throw new Error('Store already destroyed');
+    }
+    if (effectTimer !== null) {
+      globalClearTimeout(effectTimer);
     }
     ChildrenUtils.unmount(rootInstance);
     destroyed = true;

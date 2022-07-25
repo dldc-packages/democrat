@@ -20,6 +20,19 @@ test('basic count state', async () => {
   expect(onRender).toHaveBeenCalledTimes(2);
 });
 
+test('Destroy just after create', async () => {
+  const effect = jest.fn();
+  const Counter = Democrat.createFactory(() => {
+    Democrat.useEffect(effect, []);
+    return null;
+  });
+  const store = Democrat.createStore(Counter.createElement());
+  store.destroy();
+  expect(effect).not.toHaveBeenCalled();
+  await waitForNextTick();
+  expect(effect).not.toHaveBeenCalled();
+});
+
 test('generic component', async () => {
   const Counter = Democrat.createGenericFactory(function <R>(props: { val: R }): R {
     return props.val;

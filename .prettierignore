@@ -3,3 +3,4 @@ dist
 coverage
 yarn.lock
 deno_dist
+design
