@@ -37,10 +37,7 @@ export type Key = string | number | undefined;
 export interface DemocratContextProvider<P> {
   [DEMOCRAT_CONTEXT]: 'PROVIDER';
   context: Context<P>;
-  createElement: <T>(
-    props: ContextProviderProps<P, T>,
-    key?: Key
-  ) => ElementProvider<ResolveType<T>>;
+  createElement: <T>(props: ContextProviderProps<P, T>, key?: Key) => ElementProvider<ResolveType<T>>;
 }
 
 export type ContextProviderProps<P, T> = {
@@ -100,12 +97,7 @@ export interface Context<T, HasDefault extends boolean = boolean> {
   Provider: DemocratContextProvider<T>;
 }
 
-export type Children =
-  | Element<any>
-  | null
-  | Array<Children>
-  | Map<any, Children>
-  | { [key: string]: Children };
+export type Children = Element<any> | null | Array<Children> | Map<any, Children> | { [key: string]: Children };
 
 export type ResolveType<C> = C extends Element<infer T>
   ? T
@@ -278,8 +270,7 @@ type TreeElementPathResolved = {
   } & TreeElementPathData[K];
 };
 
-export type TreeElementPath<K extends TreeElementType = TreeElementType> =
-  TreeElementPathResolved[K];
+export type TreeElementPath<K extends TreeElementType = TreeElementType> = TreeElementPathResolved[K];
 
 export type HookSnapshot =
   | { type: 'CHILDREN'; child: TreeElementSnapshot }
@@ -309,17 +300,15 @@ type TreeElementSnapshotResolved = {
   } & TreeElementSnapshotData[K];
 };
 
-export type TreeElementSnapshot<K extends TreeElementType = TreeElementType> =
-  TreeElementSnapshotResolved[K];
+export type TreeElementSnapshot<K extends TreeElementType = TreeElementType> = TreeElementSnapshotResolved[K];
 
 export type Snapshot = TreeElementSnapshot<'ROOT'>;
 
 export type ReducerWithoutAction<S> = (prevState: S) => S;
-export type ReducerStateWithoutAction<R extends ReducerWithoutAction<any>> =
-  R extends ReducerWithoutAction<infer S> ? S : never;
+export type ReducerStateWithoutAction<R extends ReducerWithoutAction<any>> = R extends ReducerWithoutAction<infer S>
+  ? S
+  : never;
 export type DispatchWithoutAction = () => void;
 export type Reducer<S, A> = (prevState: S, action: A) => S;
 export type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;
-export type ReducerAction<R extends Reducer<any, any>> = R extends Reducer<any, infer A>
-  ? A
-  : never;
+export type ReducerAction<R extends Reducer<any, any>> = R extends Reducer<any, infer A> ? A : never;

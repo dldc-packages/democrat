@@ -47,11 +47,7 @@ const CHILDREN_LIFECYCLES: {
       path: TreeElementPath,
       snapshot: TreeElementSnapshot<K> | undefined
     ) => TreeElement<K>;
-    update: (
-      instance: TreeElement<K>,
-      element: TreeElementRaw[K],
-      path: TreeElementPath
-    ) => TreeElement<K>;
+    update: (instance: TreeElement<K>, element: TreeElementRaw[K], path: TreeElementPath) => TreeElement<K>;
     effect: (instance: TreeElement<K>, effecType: EffectType) => void;
     cleanup: (instance: TreeElement<K>, effecType: EffectType, force: boolean) => void;
     access: (instance: TreeElement<K>, path: TreeElementPath<K>) => TreeElement | null;
@@ -263,8 +259,7 @@ const CHILDREN_LIFECYCLES: {
         return element.map((item, index) => {
           const key = isValidElement(item) ? item.key : undefined;
           // search previous item by key first, otherwise by index
-          const prevIndex =
-            key === undefined ? index : prevKeys.indexOf(key) >= 0 ? prevKeys.indexOf(key) : index;
+          const prevIndex = key === undefined ? index : prevKeys.indexOf(key) >= 0 ? prevKeys.indexOf(key) : index;
           const prev = tree.children[prevIndex];
           if (!prev) {
             return mount(item, nextTree, { type: 'ARRAY', index }, undefined);
@@ -361,12 +356,7 @@ const CHILDREN_LIFECYCLES: {
           }
           if (!prev && next) {
             // key added
-            nextTree.children[key] = mount(
-              next,
-              nextTree,
-              { type: 'OBJECT', objectKey: key },
-              undefined
-            );
+            nextTree.children[key] = mount(next, nextTree, { type: 'OBJECT', objectKey: key }, undefined);
             return;
           }
           // key updated
@@ -458,10 +448,7 @@ const CHILDREN_LIFECYCLES: {
         }
         if (!prev && next) {
           // key added
-          nextTree.children.set(
-            key,
-            mount(next, nextTree, { type: 'MAP', mapKey: key }, undefined)
-          );
+          nextTree.children.set(key, mount(next, nextTree, { type: 'MAP', mapKey: key }, undefined));
           return;
         }
         if (prev && next) {
@@ -581,12 +568,7 @@ function mount(
   path: TreeElementPath,
   snapshot: TreeElementSnapshot | undefined
 ): TreeElement {
-  return CHILDREN_LIFECYCLES[getChildrenType(element)].mount(
-    element as never,
-    parent,
-    path,
-    snapshot as any
-  );
+  return CHILDREN_LIFECYCLES[getChildrenType(element)].mount(element as never, parent, path, snapshot as any);
 }
 
 /**
@@ -633,11 +615,7 @@ function update(
     return nextTree;
   }
 
-  const updated = CHILDREN_LIFECYCLES[instance.type].update(
-    instance as any,
-    element as never,
-    path
-  );
+  const updated = CHILDREN_LIFECYCLES[instance.type].update(instance as any, element as never, path);
   updated.parent = parent;
   updated.path = path;
   return updated;

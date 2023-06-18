@@ -1,12 +1,7 @@
 import { Subscription, Unsubscribe } from 'suub';
 import { ChildrenUtils } from './ChildrenUtils';
 import { setCurrentRootInstance } from './Global';
-import {
-  globalSetTimeout,
-  globalClearTimeout,
-  createRootTreeElement,
-  createElement,
-} from './utils';
+import { globalSetTimeout, globalClearTimeout, createRootTreeElement, createElement } from './utils';
 import {
   OnIdleExec,
   Children,
@@ -61,9 +56,7 @@ export function createFactory<P = void, T = unknown>(fn: FunctionComponent<P, T>
   };
 }
 
-export function createGenericFactory<Fn extends FunctionComponent<any, any>>(
-  fn: Fn
-): GenericFactory<Fn> {
+export function createGenericFactory<Fn extends FunctionComponent<any, any>>(fn: Fn): GenericFactory<Fn> {
   return {
     [DEMOCRAT_COMPONENT]: true,
     Component: fn,

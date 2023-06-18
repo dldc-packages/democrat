@@ -26,9 +26,7 @@ export function isValidElement(maybe: unknown): maybe is Element<any> {
 }
 
 export function isRootElement(maybe: unknown): maybe is DemocratRootElement {
-  return Boolean(
-    maybe && (maybe as any)[DEMOCRAT_ELEMENT] === true && (maybe as any)[DEMOCRAT_ROOT] === true
-  );
+  return Boolean(maybe && (maybe as any)[DEMOCRAT_ELEMENT] === true && (maybe as any)[DEMOCRAT_ROOT] === true);
 }
 
 /**
@@ -83,17 +81,11 @@ export function objectShallowEqual(
   return true;
 }
 
-export function sameObjectKeys(
-  obj1: { [key: string]: any },
-  obj2: { [key: string]: any }
-): boolean {
+export function sameObjectKeys(obj1: { [key: string]: any }, obj2: { [key: string]: any }): boolean {
   return arrayShallowEqual(Object.keys(obj1).sort(), Object.keys(obj2).sort());
 }
 
-export function depsChanged(
-  deps1: DependencyList | undefined,
-  deps2: DependencyList | undefined
-): boolean {
+export function depsChanged(deps1: DependencyList | undefined, deps2: DependencyList | undefined): boolean {
   if (deps1 === undefined || deps2 === undefined) {
     return true;
   }
@@ -143,9 +135,7 @@ export function createContext<T>(defaultValue?: T): Context<T, boolean> {
   return context;
 }
 
-export function isComponentElement(
-  element: Element<unknown>
-): element is ElementComponent<unknown> {
+export function isComponentElement(element: Element<unknown>): element is ElementComponent<unknown> {
   return typeof element.type === 'function';
 }
 
@@ -243,15 +233,7 @@ export function createRootTreeElement(data: {
   function supportReactHooks(ReactInstance: any, hooks: any) {
     if (reactHooksSupported === false) {
       reactHooksSupported = true;
-      const methods = [
-        'useState',
-        'useReducer',
-        'useEffect',
-        'useMemo',
-        'useCallback',
-        'useLayoutEffect',
-        'useRef',
-      ];
+      const methods = ['useState', 'useReducer', 'useEffect', 'useMemo', 'useCallback', 'useLayoutEffect', 'useRef'];
       methods.forEach((name) => {
         const originalFn = ReactInstance[name];
         ReactInstance[name] = (...args: Array<any>) => {
@@ -363,9 +345,7 @@ export function markContextSubDirty(instance: TreeElement, context: Context<any>
   }
 }
 
-export function isElementInstance(
-  instance: TreeElement
-): instance is TreeElement<'CHILD' | 'PROVIDER'> {
+export function isElementInstance(instance: TreeElement): instance is TreeElement<'CHILD' | 'PROVIDER'> {
   if (instance.type === 'CHILD' || instance.type === 'PROVIDER') {
     return true;
   }

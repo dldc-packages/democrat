@@ -186,11 +186,7 @@ export function useLayoutEffect(effect: EffectCallback, deps?: DependencyList): 
   return useEffectInternal('LAYOUT_EFFECT', effect, deps);
 }
 
-function useEffectInternal(
-  effecType: EffectType,
-  effect: EffectCallback,
-  deps?: DependencyList
-): void {
+function useEffectInternal(effecType: EffectType, effect: EffectCallback, deps?: DependencyList): void {
   const root = getCurrentRootInstance();
   const hook = root.getCurrentHook();
   if (hook === null) {
@@ -242,10 +238,7 @@ export function useMemo<T>(factory: () => T, deps: DependencyList | undefined): 
   return hook.value;
 }
 
-export function useCallback<T extends (...args: any[]) => unknown>(
-  callback: T,
-  deps: DependencyList
-): T {
+export function useCallback<T extends (...args: any[]) => unknown>(callback: T, deps: DependencyList): T {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useMemo(() => callback, deps);
 }
@@ -313,9 +306,7 @@ export function useContext<C extends Context<any>>(
 /**
  * Same as useContext except if there are no provider and no default value it throw an error
  */
-export function useContextOrThrow<C extends Context<any>>(
-  context: C
-): C[typeof DEMOCRAT_CONTEXT]['defaultValue'] {
+export function useContextOrThrow<C extends Context<any>>(context: C): C[typeof DEMOCRAT_CONTEXT]['defaultValue'] {
   const { found, value } = useContextInternal(context);
   if (found === false && context[DEMOCRAT_CONTEXT].hasDefault === false) {
     throw new Error('Missing Provider');

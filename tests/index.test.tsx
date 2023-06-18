@@ -1,8 +1,9 @@
+import { expect, test, vi } from 'vitest';
 import * as Democrat from '../src/mod';
-import { waitForNextState, waitForNextTick, mapMap, removeFunctionsDeep } from './utils';
+import { mapMap, removeFunctionsDeep, waitForNextState, waitForNextTick } from './utils';
 
 test('basic count state', async () => {
-  const onRender = jest.fn();
+  const onRender = vi.fn();
   const Counter = Democrat.createFactory(() => {
     onRender();
     const [count, setCount] = Democrat.useState(0);
@@ -21,7 +22,7 @@ test('basic count state', async () => {
 });
 
 test('Destroy just after create', async () => {
-  const effect = jest.fn();
+  const effect = vi.fn();
   const Counter = Democrat.createFactory(() => {
     Democrat.useEffect(effect, []);
     return null;
@@ -42,7 +43,7 @@ test('generic component', async () => {
 });
 
 test('subscribe', async () => {
-  const onRender = jest.fn();
+  const onRender = vi.fn();
   const Counter = Democrat.createFactory(() => {
     onRender();
     const [count, setCount] = Democrat.useState(0);
@@ -53,7 +54,7 @@ test('subscribe', async () => {
     };
   });
   const store = Democrat.createStore(Counter.createElement());
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(onState);
   store.getState().setCount(42);
   await waitForNextState(store);
@@ -78,7 +79,7 @@ test('useReducer', async () => {
         return state;
     }
   }
-  const onRender = jest.fn();
+  const onRender = vi.fn();
   const Counter = Democrat.createFactory(() => {
     onRender();
     const [count, dispatch] = Democrat.useReducer(reducer, initialState);
@@ -89,7 +90,7 @@ test('useReducer', async () => {
     };
   });
   const store = Democrat.createStore(Counter.createElement());
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(onState);
   store.getState().dispatch({ type: 'increment' });
   await waitForNextState(store);
@@ -104,7 +105,7 @@ test('useReducer', async () => {
 });
 
 test('subscribe wit useMemo', async () => {
-  const onRender = jest.fn();
+  const onRender = vi.fn();
   const Counter = () => {
     onRender();
     const [count, setCount] = Democrat.useState(0);
@@ -120,7 +121,7 @@ test('subscribe wit useMemo', async () => {
     return result;
   };
   const store = Democrat.createStore(Democrat.createElement(Counter, {}));
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(onState);
   store.getState().setCount(42);
   await waitForNextState(store);
@@ -131,7 +132,7 @@ test('subscribe wit useMemo', async () => {
 
 test('set two states', async () => {
   expect.assertions(3);
-  const render = jest.fn();
+  const render = vi.fn();
   const Counter = () => {
     render();
     const [countA, setCountA] = Democrat.useState(0);
@@ -155,8 +156,8 @@ test('set two states', async () => {
 });
 
 test('effects runs', async () => {
-  const onLayoutEffect = jest.fn();
-  const onEffect = jest.fn();
+  const onLayoutEffect = vi.fn();
+  const onEffect = vi.fn();
 
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
@@ -181,10 +182,10 @@ test('effects runs', async () => {
 });
 
 test('effects cleanup runs', async () => {
-  const onLayoutEffect = jest.fn();
-  const onLayoutEffectCleanup = jest.fn();
-  const onEffect = jest.fn();
-  const onEffectCleanup = jest.fn();
+  const onLayoutEffect = vi.fn();
+  const onLayoutEffectCleanup = vi.fn();
+  const onEffect = vi.fn();
+  const onEffectCleanup = vi.fn();
 
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
@@ -218,8 +219,8 @@ test('effects cleanup runs', async () => {
 });
 
 test('runs cleanup only once', async () => {
-  const onLayoutEffect = jest.fn();
-  const onLayoutEffectCleanup = jest.fn();
+  const onLayoutEffect = vi.fn();
+  const onLayoutEffectCleanup = vi.fn();
 
   const Child = () => {
     Democrat.useLayoutEffect(() => {
@@ -256,7 +257,7 @@ test('runs cleanup only once', async () => {
 });
 
 test('use effect when re-render', async () => {
-  const onUseEffect = jest.fn();
+  const onUseEffect = vi.fn();
   const Counter = () => {
     const [count, setCount] = Democrat.useState(0);
 
@@ -308,18 +309,18 @@ test('multiple counters (array children)', async () => {
 
   const store = Democrat.createStore(Democrat.createElement(Counters, {}));
   expect(store.getState()).toMatchInlineSnapshot(`
-    Object {
+    {
       "addCounter": [Function],
-      "counters": Array [
-        Object {
+      "counters": [
+        {
           "count": 0,
           "setCount": [Function],
         },
-        Object {
+        {
           "count": 0,
           "setCount": [Function],
         },
-        Object {
+        {
           "count": 0,
           "setCount": [Function],
         },
@@ -359,13 +360,13 @@ test('multiple counters (object children)', () => {
 
   const store = Democrat.createStore(Democrat.createElement(Counters, {}));
   expect(store.getState()).toMatchInlineSnapshot(`
-    Object {
-      "counters": Object {
-        "counterA": Object {
+    {
+      "counters": {
+        "counterA": {
           "count": 2,
           "setCount": [Function],
         },
-        "counterB": Object {
+        "counterB": {
           "count": 0,
           "setCount": [Function],
         },
@@ -402,13 +403,13 @@ test('multiple counters (object children update)', async () => {
 
   const store = Democrat.createStore(Democrat.createElement(Counters, {}));
   expect(store.getState()).toMatchInlineSnapshot(`
-    Object {
-      "counters": Object {
-        "counterA": Object {
+    {
+      "counters": {
+        "counterA": {
           "count": 2,
           "setCount": [Function],
         },
-        "counterB": Object {
+        "counterB": {
           "count": 0,
           "setCount": [Function],
         },
@@ -421,25 +422,25 @@ test('multiple counters (object children update)', async () => {
   store.getState().toggle();
   await waitForNextState(store);
   expect(store.getState()).toMatchInlineSnapshot(`
-  Object {
-    "counters": Object {
-      "counterA": Object {
-        "count": 2,
-        "setCount": [Function],
+    {
+      "counters": {
+        "counterA": {
+          "count": 2,
+          "setCount": [Function],
+        },
+        "counterB": {
+          "count": 0,
+          "setCount": [Function],
+        },
+        "counterC": {
+          "count": 0,
+          "setCount": [Function],
+        },
       },
-      "counterB": Object {
-        "count": 0,
-        "setCount": [Function],
-      },
-      "counterC": Object {
-        "count": 0,
-        "setCount": [Function],
-      },
-    },
-    "sum": 2,
-    "toggle": [Function],
-  }
-`);
+      "sum": 2,
+      "toggle": [Function],
+    }
+  `);
 });
 
 test('render a context', async () => {
@@ -603,7 +604,7 @@ test('subscribe when children change', async () => {
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(onState);
   store.getState().child.setCount(42);
   await waitForNextState(store);
@@ -632,7 +633,7 @@ test('useLayoutEffect', async () => {
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(onState);
   store.getState().setCount(42);
   await waitForNextState(store);
@@ -659,7 +660,7 @@ test('useEffect in loop', async () => {
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(() => {
     onState(store.getState().count);
   });
@@ -692,7 +693,7 @@ test('useLayoutEffect in loop', async () => {
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(onState);
   store.getState().setCount(3);
   await waitForNextState(store);
@@ -725,7 +726,7 @@ test('useLayoutEffect & useEffect in loop (should run useEffect sync)', async ()
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
-  const onState = jest.fn();
+  const onState = vi.fn();
   store.subscribe(onState);
   store.getState().setCount(3);
   await waitForNextState(store);
@@ -774,9 +775,7 @@ test('array of children with keys', async () => {
       setItems((prev) => [item, ...prev]);
     }, []);
 
-    const child = Democrat.useChildren(
-      items.map((v) => Democrat.createElement(Child, { val: v }, v))
-    );
+    const child = Democrat.useChildren(items.map((v) => Democrat.createElement(Child, { val: v }, v)));
 
     return Democrat.useMemo(
       () => ({
@@ -794,7 +793,7 @@ test('array of children with keys', async () => {
 });
 
 test('remove key of array child', async () => {
-  const onRender = jest.fn();
+  const onRender = vi.fn();
 
   const Child = () => {
     return Math.random();
@@ -833,10 +832,7 @@ test('render an array as root', () => {
   expect(() =>
     Democrat.createStore([Democrat.createElement(Child, {}), Democrat.createElement(Child, {})])
   ).not.toThrow();
-  const store = Democrat.createStore([
-    Democrat.createElement(Child, {}),
-    Democrat.createElement(Child, {}),
-  ]);
+  const store = Democrat.createStore([Democrat.createElement(Child, {}), Democrat.createElement(Child, {})]);
   expect(store.getState()).toEqual([42, 42]);
 });
 
@@ -971,14 +967,14 @@ test('can save and restore unsing snapshot', async () => {
   await waitForNextTick();
   const finalState = removeFunctionsDeep(store.getState());
   expect(finalState).toMatchInlineSnapshot(`
-    Object {
+    {
       "addChild": "REMOVED_FUNCTION",
       "children": Map {
-        "a" => Object {
+        "a" => {
           "count": 0,
           "setCount": "REMOVED_FUNCTION",
         },
-        "b" => Object {
+        "b" => {
           "count": 42,
           "setCount": "REMOVED_FUNCTION",
         },
@@ -993,7 +989,7 @@ test('can save and restore unsing snapshot', async () => {
 });
 
 test('passing a React instance', () => {
-  const useState = jest.fn((initialState: any) => [initialState]);
+  const useState = vi.fn((initialState: any) => [initialState]);
   const NotReact = {
     useState,
   };
@@ -1016,7 +1012,7 @@ test('passing a React instance', () => {
 });
 
 test(`effects don't run in passive mode`, async () => {
-  const onEffect = jest.fn();
+  const onEffect = vi.fn();
 
   const Store = () => {
     Democrat.useEffect(() => {

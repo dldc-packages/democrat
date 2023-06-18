@@ -1,6 +1,5 @@
 node_modules
 dist
 coverage
-yarn.lock
-deno_dist
-design
+pnpm-lock.yaml
+deno
