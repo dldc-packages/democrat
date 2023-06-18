@@ -21,6 +21,7 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "skipLibCheck": true // required because esbuild would need 'DOM' lib
+    "skipLibCheck": true,
+    "jsx": "react-jsx"
   }
 }
