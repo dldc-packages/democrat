@@ -21,6 +21,7 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "types": [],
     "jsx": "react-jsx"
   }
 }
