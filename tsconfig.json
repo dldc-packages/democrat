@@ -4,7 +4,7 @@
   "compilerOptions": {
     "target": "ESNext",
     "module": "ES2020",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "importHelpers": true,
     "declaration": true,
     "sourceMap": true,
@@ -21,7 +21,6 @@
     "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
-    "skipLibCheck": true,
     "jsx": "react-jsx"
   }
 }
