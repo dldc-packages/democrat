@@ -1,15 +1,15 @@
 {
-  "name": "democrat",
+  "name": "@dldc/democrat",
   "version": "4.0.0-9",
   "description": "React, but for state management !",
   "keywords": [],
-  "homepage": "https://github.com/etienne-dldc/democrat#readme",
+  "homepage": "https://github.com/dldc-packages/democrat#readme",
   "bugs": {
-    "url": "https://github.com/etienne-dldc/democrat/issues"
+    "url": "https://github.com/dldc-packages/democrat/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/etienne-dldc/democrat.git"
+    "url": "git+https://github.com/dldc-packages/democrat.git"
   },
   "license": "MIT",
   "author": "Etienne Dldc <e.deladonchamps@gmail.com>",
@@ -39,7 +39,7 @@
     "typecheck:watch": "tsc --watch"
   },
   "dependencies": {
-    "suub": "^3.2.1"
+    "@dldc/pubsub": "^5.1.3"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",

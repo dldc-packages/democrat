@@ -1,26 +1,26 @@
-import { Subscription, Unsubscribe } from 'suub';
+import { Suub, Unsubscribe } from '@dldc/pubsub';
 import { ChildrenUtils } from './ChildrenUtils';
 import { setCurrentRootInstance } from './Global';
-import { globalSetTimeout, globalClearTimeout, createRootTreeElement, createElement } from './utils';
-import {
-  OnIdleExec,
-  Children,
-  ResolveType,
-  DemocratRootElement,
-  TreeElement,
-  Patch,
-  Patches,
-  Snapshot,
-  FunctionComponent,
-  Factory,
-  Key,
-  GenericFactory,
-} from './types';
-import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 import * as Hooks from './Hooks';
 import { useChildren } from './Hooks';
+import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
+import {
+  Children,
+  DemocratRootElement,
+  Factory,
+  FunctionComponent,
+  GenericFactory,
+  Key,
+  OnIdleExec,
+  Patch,
+  Patches,
+  ResolveType,
+  Snapshot,
+  TreeElement,
+} from './types';
+import { createElement, createRootTreeElement, globalClearTimeout, globalSetTimeout } from './utils';
 
-export { isValidElement, createContext, createElement } from './utils';
+export { createContext, createElement, isValidElement } from './utils';
 
 export interface Store<S> {
   render: <C extends Children>(rootChildren: C) => void;
@@ -75,8 +75,8 @@ export function createStore<C extends Children>(
 ): Store<ResolveType<C>> {
   const { ReactInstance = null, passiveMode = false, snapshot } = options;
 
-  const stateSub = Subscription();
-  const patchesSub = Subscription<Patches>();
+  const stateSub = Suub.createVoidSubscription();
+  const patchesSub = Suub.createSubscription<Patches>();
 
   let state: ResolveType<C>;
   let destroyed: boolean = false;
