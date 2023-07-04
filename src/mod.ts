@@ -1,7 +1,7 @@
-export * from './Store';
 export * from './Hooks';
+export * from './Store';
 
-export {
+export type {
   Children,
   Context,
   DependencyList,

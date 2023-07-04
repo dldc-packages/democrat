@@ -1,24 +1,24 @@
-import { DEMOCRAT_ELEMENT, DEMOCRAT_CONTEXT, DEMOCRAT_ROOT } from './symbols';
+import { DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 import {
-  FunctionComponent,
-  DependencyList,
   Context,
-  Element,
+  ContextProviderProps,
   DemocratContextProvider,
+  DemocratRootElement,
+  DependencyList,
+  Element,
   ElementComponent,
   ElementProvider,
-  TreeElementType,
-  TreeElementCommon,
-  TreeElementData,
-  TreeElement,
-  DemocratRootElement,
+  FunctionComponent,
   HooksData,
   OnIdle,
-  TreeElementPath,
   Patch,
   Patches,
   ResolveType,
-  ContextProviderProps,
+  TreeElement,
+  TreeElementCommon,
+  TreeElementData,
+  TreeElementPath,
+  TreeElementType,
 } from './types';
 
 export function isValidElement(maybe: unknown): maybe is Element<any> {
@@ -104,9 +104,6 @@ export function mapObject<T extends { [key: string]: any }, U>(
     return acc;
   }, {} as { [K in keyof T]: U });
 }
-
-export const globalSetTimeout: typeof global.setTimeout = setTimeout as any;
-export const globalClearTimeout: typeof global.clearTimeout = clearTimeout as any;
 
 export function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): Map<K, U> {
   const result = new Map<K, U>();
@@ -422,3 +419,5 @@ function isDescendantOf(instance: TreeElement, parent: TreeElement) {
   }
   return current === parent;
 }
+
+export type Timer = ReturnType<typeof setTimeout>;

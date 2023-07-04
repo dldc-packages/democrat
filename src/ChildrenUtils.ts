@@ -1,32 +1,32 @@
 import {
+  Context,
   EffectType,
   ElementComponent,
-  TreeElementType,
-  TreeElement,
-  Context,
-  TreeElementRaw,
-  TreeElementPath,
-  TreeElementSnapshot,
   HookSnapshot,
+  TreeElement,
+  TreeElementPath,
+  TreeElementRaw,
+  TreeElementSnapshot,
+  TreeElementType,
 } from './types';
 import {
-  isValidElement,
-  objectShallowEqual,
-  sameObjectKeys,
-  mapObject,
-  mapMap,
-  isComponentElement,
-  isProviderElement,
   createTreeElement,
+  getInstanceKey,
+  isComponentElement,
+  isElementInstance,
+  isPlainObject,
+  isProviderElement,
+  isRootElement,
+  isValidElement,
+  mapMap,
+  mapObject,
+  markContextSubDirty,
+  objectShallowEqual,
+  registerContextSub,
   sameArrayStructure,
   sameMapStructure,
-  isRootElement,
+  sameObjectKeys,
   unregisterContextSub,
-  registerContextSub,
-  markContextSubDirty,
-  isPlainObject,
-  getInstanceKey,
-  isElementInstance,
 } from './utils';
 
 export const ChildrenUtils = {
@@ -675,10 +675,8 @@ function renderElement<T>(element: ElementComponent<T>, instance: TreeElement<'C
   instance.nextHooks = [];
   const result = element.type(element.props);
   // make sure rule of hooks is respected
-  if (process.env.NODE_ENV === 'development') {
-    if (instance.hooks && instance.hooks.length !== instance.nextHooks.length) {
-      throw new Error('Hooks count mismatch !');
-    }
+  if (instance.hooks && instance.hooks.length !== instance.nextHooks.length) {
+    throw new Error('Hooks count mismatch !');
   }
   // update context sub
   const allContexts = new Set<Context<any>>();

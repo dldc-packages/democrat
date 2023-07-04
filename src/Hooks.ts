@@ -1,34 +1,34 @@
+import { ChildrenUtils } from './ChildrenUtils';
+import { getCurrentRootInstance } from './Global';
+import { DEMOCRAT_CONTEXT } from './symbols';
 import {
   Children,
-  ResolveType,
-  TreeElementPath,
-  ReducerWithoutAction,
-  ReducerStateWithoutAction,
-  DispatchWithoutAction,
-  Reducer,
-  ReducerState,
-  Dispatch,
-  ReducerAction,
-  ReducerPatch,
-  ReducerHookData,
-  SetStateAction,
-  StatePatch,
-  StateHookData,
-  EffectCallback,
+  Context,
+  ContextHookData,
   DependencyList,
-  EffectType,
+  Dispatch,
+  DispatchWithoutAction,
+  EffectCallback,
   EffectHookData,
+  EffectType,
   LayoutEffectHookData,
   MemoHookData,
   MutableRefObject,
+  Reducer,
+  ReducerAction,
+  ReducerHookData,
+  ReducerPatch,
+  ReducerState,
+  ReducerStateWithoutAction,
+  ReducerWithoutAction,
   RefHookData,
-  Context,
-  ContextHookData,
+  ResolveType,
+  SetStateAction,
+  StateHookData,
+  StatePatch,
+  TreeElementPath,
 } from './types';
-import { getCurrentRootInstance } from './Global';
-import { ChildrenUtils } from './ChildrenUtils';
-import { getPatchPath, depsChanged } from './utils';
-import { DEMOCRAT_CONTEXT } from './symbols';
+import { depsChanged, getPatchPath } from './utils';
 
 export function useChildren<C extends Children>(children: C): ResolveType<C> {
   const root = getCurrentRootInstance();

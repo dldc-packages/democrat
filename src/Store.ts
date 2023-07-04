@@ -18,7 +18,7 @@ import {
   Snapshot,
   TreeElement,
 } from './types';
-import { createElement, createRootTreeElement, globalClearTimeout, globalSetTimeout } from './utils';
+import { Timer, createElement, createRootTreeElement } from './utils';
 
 export { createContext, createElement, isValidElement } from './utils';
 
@@ -84,7 +84,7 @@ export function createStore<C extends Children>(
   let renderRequested = false;
   let flushScheduled = false;
   let patchesQueue: Patches = [];
-  let effectTimer: NodeJS.Timeout | null = null;
+  let effectTimer: Timer | undefined = undefined;
 
   const rootElem: DemocratRootElement = {
     [DEMOCRAT_ELEMENT]: true,
@@ -146,7 +146,7 @@ export function createStore<C extends Children>(
     const layoutEffectsRequestRender = flushExecQueue();
     if (layoutEffectsRequestRender) {
       // cancel the setTimeout
-      globalClearTimeout(effectTimer);
+      globalThis.clearTimeout(effectTimer);
       // run effect synchronously
       ChildrenUtils.effects(rootInstance);
       // apply setState
@@ -184,7 +184,7 @@ export function createStore<C extends Children>(
       return;
     }
     flushScheduled = true;
-    globalSetTimeout(() => {
+    globalThis.setTimeout(() => {
       flushScheduled = false;
       const shouldRender = flushExecQueue();
       if (shouldRender) {
@@ -211,8 +211,8 @@ export function createStore<C extends Children>(
     return renderRequested;
   }
 
-  function scheduleEffects(): NodeJS.Timeout {
-    return globalSetTimeout(() => {
+  function scheduleEffects(): Timer {
+    return globalThis.setTimeout(() => {
       ChildrenUtils.effects(rootInstance);
       const shouldRender = flushExecQueue();
       if (shouldRender) {
@@ -251,7 +251,7 @@ export function createStore<C extends Children>(
       throw new Error('Store already destroyed');
     }
     if (effectTimer !== null) {
-      globalClearTimeout(effectTimer);
+      globalThis.clearTimeout(effectTimer);
     }
     ChildrenUtils.unmount(rootInstance);
     destroyed = true;
