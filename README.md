@@ -166,7 +166,7 @@ const Counter = () => {
       count,
       increment,
     }),
-    [count, increment]
+    [count, increment],
   );
 
   return result;
@@ -182,7 +182,7 @@ const Store = () => {
     // create as many counters as `count`
     Array(counter.count)
       .fill(null)
-      .map(() => Democrat.createElement(Counter, {}))
+      .map(() => Democrat.createElement(Counter, {})),
   );
 
   return Democrat.useMemo(
@@ -191,7 +191,7 @@ const Store = () => {
       countersObject,
       countersArray,
     }),
-    [counter, countersObject, countersArray]
+    [counter, countersObject, countersArray],
   );
 };
 ```

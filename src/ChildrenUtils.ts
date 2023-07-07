@@ -45,7 +45,7 @@ const CHILDREN_LIFECYCLES: {
       element: TreeElementRaw[K],
       parent: TreeElement,
       path: TreeElementPath,
-      snapshot: TreeElementSnapshot<K> | undefined
+      snapshot: TreeElementSnapshot<K> | undefined,
     ) => TreeElement<K>;
     update: (instance: TreeElement<K>, element: TreeElementRaw[K], path: TreeElementPath) => TreeElement<K>;
     effect: (instance: TreeElement<K>, effecType: EffectType) => void;
@@ -309,7 +309,7 @@ const CHILDREN_LIFECYCLES: {
         mapObject(element, (item, key) => {
           const snap = snapshot?.children[key];
           return mount(item, tree, { type: 'OBJECT', objectKey: key }, snap);
-        })
+        }),
       );
       tree.value = mapObject(tree.children, (v) => v.value);
       return tree;
@@ -566,7 +566,7 @@ function mount(
   element: any,
   parent: TreeElement,
   path: TreeElementPath,
-  snapshot: TreeElementSnapshot | undefined
+  snapshot: TreeElementSnapshot | undefined,
 ): TreeElement {
   return CHILDREN_LIFECYCLES[getChildrenType(element)].mount(element as never, parent, path, snapshot as any);
 }
@@ -581,7 +581,7 @@ function update(
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   element: any,
   parent: TreeElement,
-  path: TreeElementPath
+  path: TreeElementPath,
 ): TreeElement {
   if ((parent === null || path === null) && instance.type !== 'ROOT') {
     throw new Error('Oops');

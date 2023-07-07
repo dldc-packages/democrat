@@ -71,7 +71,7 @@ export function createGenericFactory<Fn extends FunctionComponent<any, any>>(fn:
 
 export function createStore<C extends Children>(
   rootChildren: C,
-  options: CreateStoreOptions = {}
+  options: CreateStoreOptions = {},
 ): Store<ResolveType<C>> {
   const { ReactInstance = null, passiveMode = false, snapshot } = options;
 

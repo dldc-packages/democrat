@@ -27,12 +27,15 @@ export function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): M
 
 export function mapObject<T extends { [key: string]: any }, U>(
   obj: T,
-  mapper: (v: T[keyof T], key: string) => U
+  mapper: (v: T[keyof T], key: string) => U,
 ): { [K in keyof T]: U } {
-  return Object.keys(obj).reduce((acc, key) => {
-    (acc as any)[key] = mapper(obj[key], key);
-    return acc;
-  }, {} as { [K in keyof T]: U });
+  return Object.keys(obj).reduce(
+    (acc, key) => {
+      (acc as any)[key] = mapper(obj[key], key);
+      return acc;
+    },
+    {} as { [K in keyof T]: U },
+  );
 }
 
 export function removeFunctionsDeep<T>(item: T): T {

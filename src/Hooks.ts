@@ -60,13 +60,13 @@ export function useChildren<C extends Children>(children: C): ResolveType<C> {
 export function useReducer<R extends ReducerWithoutAction<any>, I>(
   reducer: R,
   initializerArg: I,
-  initializer: (arg: I) => ReducerStateWithoutAction<R>
+  initializer: (arg: I) => ReducerStateWithoutAction<R>,
 ): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
 // overload where dispatch could accept 0 arguments.
 export function useReducer<R extends ReducerWithoutAction<any>>(
   reducer: R,
   initializerArg: ReducerStateWithoutAction<R>,
-  initializer?: undefined
+  initializer?: undefined,
 ): [ReducerStateWithoutAction<R>, DispatchWithoutAction];
 // overload where "I" may be a subset of ReducerState<R>; used to provide autocompletion.
 // If "I" matches ReducerState<R> exactly then the last overload will allow initializer to be ommitted.
@@ -74,18 +74,18 @@ export function useReducer<R extends ReducerWithoutAction<any>>(
 export function useReducer<R extends Reducer<any, any>, I>(
   reducer: R,
   initializerArg: I & ReducerState<R>,
-  initializer: (arg: I & ReducerState<R>) => ReducerState<R>
+  initializer: (arg: I & ReducerState<R>) => ReducerState<R>,
 ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
 // overload for free "I"; all goes as long as initializer converts it into "ReducerState<R>".
 export function useReducer<R extends Reducer<any, any>, I>(
   reducer: R,
   initializerArg: I,
-  initializer: (arg: I) => ReducerState<R>
+  initializer: (arg: I) => ReducerState<R>,
 ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
 export function useReducer<R extends Reducer<any, any>>(
   reducer: R,
   initialState: ReducerState<R>,
-  initializer?: undefined
+  initializer?: undefined,
 ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
 // implementation
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
@@ -266,7 +266,7 @@ export function useRef<T>(initialValue?: T): MutableRefObject<T> {
 }
 
 function useContextInternal<C extends Context<any>>(
-  context: C
+  context: C,
 ): { found: C[typeof DEMOCRAT_CONTEXT]['defaultValue']; value: any } {
   const root = getCurrentRootInstance();
   const hook = root.getCurrentHook();
@@ -296,7 +296,7 @@ function useContextInternal<C extends Context<any>>(
 }
 
 export function useContext<C extends Context<any>>(
-  context: C
+  context: C,
 ): C[typeof DEMOCRAT_CONTEXT]['hasDefault'] extends false
   ? C[typeof DEMOCRAT_CONTEXT]['defaultValue'] | undefined
   : C[typeof DEMOCRAT_CONTEXT]['defaultValue'] {

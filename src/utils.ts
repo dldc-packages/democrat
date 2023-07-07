@@ -37,17 +37,17 @@ export function isRootElement(maybe: unknown): maybe is DemocratRootElement {
 export function createElement<P, T>(
   component: FunctionComponent<P, T>,
   props: P,
-  key?: string | number | undefined
+  key?: string | number | undefined,
 ): Element<T>;
 export function createElement<P, T>(
   context: DemocratContextProvider<P>,
   props: ContextProviderProps<P, T>,
-  key?: string | number | undefined
+  key?: string | number | undefined,
 ): Element<ResolveType<T>>;
 export function createElement<P, T>(
   component: FunctionComponent<P, T> | DemocratContextProvider<P>,
   props: P = {} as any,
-  key?: string | number | undefined
+  key?: string | number | undefined,
 ): Element<T> {
   const element: Element<T> = {
     [DEMOCRAT_ELEMENT]: true,
@@ -60,7 +60,7 @@ export function createElement<P, T>(
 
 export function objectShallowEqual(
   deps1: { [key: string]: any } | undefined,
-  deps2: { [key: string]: any } | undefined
+  deps2: { [key: string]: any } | undefined,
 ): boolean {
   if (deps1 === deps2) {
     return true;
@@ -97,12 +97,15 @@ export function depsChanged(deps1: DependencyList | undefined, deps2: Dependency
 
 export function mapObject<T extends { [key: string]: any }, U>(
   obj: T,
-  mapper: (v: T[keyof T], key: string) => U
+  mapper: (v: T[keyof T], key: string) => U,
 ): { [K in keyof T]: U } {
-  return Object.keys(obj).reduce((acc, key) => {
-    (acc as any)[key] = mapper(obj[key], key);
-    return acc;
-  }, {} as { [K in keyof T]: U });
+  return Object.keys(obj).reduce(
+    (acc, key) => {
+      (acc as any)[key] = mapper(obj[key], key);
+      return acc;
+    },
+    {} as { [K in keyof T]: U },
+  );
 }
 
 export function mapMap<K, V, U>(source: Map<K, V>, mapper: (v: V, k: K) => U): Map<K, U> {
@@ -149,7 +152,7 @@ export function createTreeElement<T extends TreeElementType>(
   type: T,
   parent: TreeElement,
   path: TreeElementPath,
-  data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root' | 'path'> & TreeElementData[T]
+  data: Omit<TreeElementCommon, 'id' | 'state' | 'parent' | 'root' | 'path'> & TreeElementData[T],
 ): TreeElement<T> {
   const id = nextId();
   return {

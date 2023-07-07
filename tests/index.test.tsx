@@ -115,7 +115,7 @@ test('subscribe wit useMemo', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
 
     return result;
@@ -294,7 +294,7 @@ test('multiple counters (array children)', async () => {
     const [numberOfCounter, setNumberOfCounter] = Democrat.useState(3);
 
     const counters = Democrat.useChildren(
-      new Array(numberOfCounter).fill(null).map(() => Democrat.createElement(Counter, {}))
+      new Array(numberOfCounter).fill(null).map(() => Democrat.createElement(Counter, {})),
     );
 
     const addCounter = Democrat.useCallback(() => {
@@ -459,7 +459,7 @@ test('render a context', async () => {
     Democrat.createElement(NumCtx.Provider, {
       value: 42,
       children: Democrat.createElement(Store, {}),
-    })
+    }),
   );
   expect(store.getState().count).toEqual(42);
   store.getState().setCount(1);
@@ -487,7 +487,7 @@ test('render a context and update it', async () => {
       Democrat.createElement(NumCtx.Provider, {
         value: num,
         children: Democrat.createElement(Child, {}),
-      })
+      }),
     );
 
     return {
@@ -538,7 +538,7 @@ test('conditionnaly use a children', async () => {
         setShow,
         child,
       }),
-      [setShow, child]
+      [setShow, child],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -556,7 +556,7 @@ test('render a children', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
 
@@ -569,7 +569,7 @@ test('render a children', async () => {
         setCount,
         child,
       }),
-      [count, setCount, child]
+      [count, setCount, child],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -587,7 +587,7 @@ test('subscribe when children change', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
 
@@ -600,7 +600,7 @@ test('subscribe when children change', async () => {
         setCount,
         child,
       }),
-      [count, setCount, child]
+      [count, setCount, child],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -629,7 +629,7 @@ test('useLayoutEffect', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -656,7 +656,7 @@ test('useEffect in loop', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -689,7 +689,7 @@ test('useLayoutEffect in loop', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -722,7 +722,7 @@ test('useLayoutEffect & useEffect in loop (should run useEffect sync)', async ()
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -753,7 +753,7 @@ test('array of children', async () => {
         addItem,
         child,
       }),
-      [addItem, child]
+      [addItem, child],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -782,7 +782,7 @@ test('array of children with keys', async () => {
         addItem,
         child,
       }),
-      [addItem, child]
+      [addItem, child],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -812,7 +812,7 @@ test('remove key of array child', async () => {
         setWithKey,
         child,
       }),
-      [setWithKey, child]
+      [setWithKey, child],
     );
   };
   const store = Democrat.createStore(Democrat.createElement(Store, {}));
@@ -830,7 +830,7 @@ test('render an array as root', () => {
     return 42;
   };
   expect(() =>
-    Democrat.createStore([Democrat.createElement(Child, {}), Democrat.createElement(Child, {})])
+    Democrat.createStore([Democrat.createElement(Child, {}), Democrat.createElement(Child, {})]),
   ).not.toThrow();
   const store = Democrat.createStore([Democrat.createElement(Child, {}), Democrat.createElement(Child, {})]);
   expect(store.getState()).toEqual([42, 42]);
@@ -857,7 +857,7 @@ test('update a Map', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
 
@@ -888,7 +888,7 @@ test('update a Map', async () => {
         removeChild,
         addChild,
       }),
-      [children, removeChild, addChild]
+      [children, removeChild, addChild],
     );
   };
 
@@ -918,7 +918,7 @@ test('can save and restore unsing snapshot', async () => {
         count,
         setCount,
       }),
-      [count, setCount]
+      [count, setCount],
     );
   };
 
@@ -954,7 +954,7 @@ test('can save and restore unsing snapshot', async () => {
         addChild,
         sum,
       }),
-      [children, removeChild, addChild]
+      [children, removeChild, addChild],
     );
   };
 
