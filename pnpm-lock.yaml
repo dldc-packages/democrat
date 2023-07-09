@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@dldc/pubsub':
-    specifier: ^5.1.3
-    version: 5.1.3
+    specifier: ^5.2.0
+    version: 5.2.0
 
 devDependencies:
   '@testing-library/jest-dom':
@@ -330,10 +330,20 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@dldc/pubsub@5.1.3:
-    resolution: {integrity: sha512-OgMdxY/KONHCROx7ur9CZWfC+xE3qbsuWjCfOA8XFM7wnQhllEUlmOHvLdBXYeY5AHG/dmIqkq4/Hk7TaaKP1w==}
+  /@dldc/erreur@3.0.6:
+    resolution: {integrity: sha512-Kp8K6roiCkqBRvW46UiQcX8yTRiNAqrKpZUILTB7WPdyKUkqkrVZB47aAA17iy/vZCQ5cF9NeiVBOvSFTBOyKQ==}
     dependencies:
-      erreur: 2.1.0
+      '@dldc/stack': 3.0.4
+    dev: false
+
+  /@dldc/pubsub@5.2.0:
+    resolution: {integrity: sha512-jQcoeLoOLIuArQbPfFvoD/5RnYq2u4sMZ49k15Avlyzq8SxRf5txOJT9QjU0BPL7nTRkCR7Cwa+mtXffPnJbUA==}
+    dependencies:
+      '@dldc/erreur': 3.0.6
+    dev: false
+
+  /@dldc/stack@3.0.4:
+    resolution: {integrity: sha512-v3CRaq0yGqT6l0kvuCCAulimOQetn6UAXtJ211+ZhZPIUK+224QEKnVvIo2Hg5DXfotv4SjJG7AI7KlUq67zEg==}
     dev: false
 
   /@esbuild/android-arm64@0.18.11:
@@ -1975,11 +1985,6 @@ packages:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
     dev: true
-
-  /erreur@2.1.0:
-    resolution: {integrity: sha512-hll3F0nzc1MyWgwYMt5nnEz8tP5nX+bH1uoZa2RGJs2/cCHrviYrp05Tce2owwCsGp+BqMfV1y75rLDelGE9SA==}
-    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-    dev: false
 
   /error-ex@1.3.2:
     resolution: {integrity: sha512-7dFHNmqeFSEt2ZBsCriorKnn3Z2pj+fd9kmI6QoWw4//DL+icEBfc0U7qJCisqrTsKTjw4fNFy2pW9OqStD84g==}
