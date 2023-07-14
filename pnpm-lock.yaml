@@ -6,8 +6,8 @@ settings:
 
 dependencies:
   '@dldc/pubsub':
-    specifier: ^5.2.0
-    version: 5.2.0
+    specifier: ^5.2.1
+    version: 5.2.1
 
 devDependencies:
   '@testing-library/jest-dom':
@@ -333,20 +333,20 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: true
 
-  /@dldc/erreur@3.0.6:
-    resolution: {integrity: sha512-Kp8K6roiCkqBRvW46UiQcX8yTRiNAqrKpZUILTB7WPdyKUkqkrVZB47aAA17iy/vZCQ5cF9NeiVBOvSFTBOyKQ==}
+  /@dldc/erreur@3.0.7:
+    resolution: {integrity: sha512-HV9e5/O80YleOjXA6D5Wog83Ar8yhwzM67PdhLF2LiB0jSKyMODIPOI+8H/qauYDqU/51zmVMryV9j/CLh3CMA==}
     dependencies:
-      '@dldc/stack': 3.0.4
+      '@dldc/stack': 3.1.0
     dev: false
 
-  /@dldc/pubsub@5.2.0:
-    resolution: {integrity: sha512-jQcoeLoOLIuArQbPfFvoD/5RnYq2u4sMZ49k15Avlyzq8SxRf5txOJT9QjU0BPL7nTRkCR7Cwa+mtXffPnJbUA==}
+  /@dldc/pubsub@5.2.1:
+    resolution: {integrity: sha512-oGnYQxmU8BVbu2aZlMm1iCVzAm+bXxcXgtz/mOh3OCQ8pCfZpBenAL5ARqmrVjq6VJMxiIlYdapKuF/Vg7Nnnw==}
     dependencies:
-      '@dldc/erreur': 3.0.6
+      '@dldc/erreur': 3.0.7
     dev: false
 
-  /@dldc/stack@3.0.4:
-    resolution: {integrity: sha512-v3CRaq0yGqT6l0kvuCCAulimOQetn6UAXtJ211+ZhZPIUK+224QEKnVvIo2Hg5DXfotv4SjJG7AI7KlUq67zEg==}
+  /@dldc/stack@3.1.0:
+    resolution: {integrity: sha512-br/OD1JEGeEmJNqaRZQ6cT+NGkR6sI0ECw7+KYl89nWIjmI0PazdjpUnof+gr7OEB0yV1FQTvvjVq29eNOfJ2w==}
     dev: false
 
   /@esbuild/android-arm64@0.18.11:
