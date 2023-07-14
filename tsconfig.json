@@ -13,7 +13,6 @@
     "jsx": "react-jsx",
     "isolatedModules": true,
     "declaration": true,
-    "skipLibCheck": true,
     "sourceMap": true,
     "noEmit": true,
     "types": [],
@@ -21,6 +20,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true
   }
 }
