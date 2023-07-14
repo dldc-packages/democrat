@@ -40,7 +40,7 @@
     "typecheck:watch": "tsc --watch"
   },
   "dependencies": {
-    "@dldc/pubsub": "^5.2.1"
+    "@dldc/pubsub": "^5.2.2"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
