@@ -1,10 +1,12 @@
-import { Suub, Unsubscribe } from '@dldc/pubsub';
+import type { Unsubscribe } from '@dldc/pubsub';
+import { Suub } from '@dldc/pubsub';
 import { ChildrenUtils } from './ChildrenUtils';
 import { setCurrentRootInstance } from './Global';
 import * as Hooks from './Hooks';
 import { useChildren } from './Hooks';
 import { DEMOCRAT_COMPONENT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
-import {
+import type {
+  AnyFn,
   Children,
   DemocratRootElement,
   Factory,
@@ -18,7 +20,8 @@ import {
   Snapshot,
   TreeElement,
 } from './types';
-import { Timer, createElement, createRootTreeElement } from './utils';
+import type { Timer } from './utils';
+import { createElement, createRootTreeElement } from './utils';
 
 export { createContext, createElement, isValidElement } from './utils';
 
@@ -36,7 +39,7 @@ export interface Store<S> {
 
 export interface CreateStoreOptions {
   // pass an instance of React to override hooks
-  ReactInstance?: null | any;
+  ReactInstance?: any; // null | typeof React
   // In passive mode, effect are never executed
   passiveMode?: boolean;
   // restore a snapshot
@@ -60,10 +63,10 @@ export function createGenericFactory<Fn extends FunctionComponent<any, any>>(fn:
   return {
     [DEMOCRAT_COMPONENT]: true,
     Component: fn,
-    createElement: ((runner: any, key: Key) => {
+    createElement: ((runner: AnyFn, key: Key) => {
       return runner((props: any) => createElement(fn, props, key));
     }) as any,
-    useChildren: ((runner: any, key: Key) => {
+    useChildren: ((runner: AnyFn, key: Key) => {
       return useChildren(runner((props: any) => createElement(fn, props, key)));
     }) as any,
   };

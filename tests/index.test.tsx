@@ -34,7 +34,7 @@ test('Destroy just after create', async () => {
   expect(effect).not.toHaveBeenCalled();
 });
 
-test('generic component', async () => {
+test('generic component', () => {
   const Counter = Democrat.createGenericFactory(function <R>(props: { val: R }): R {
     return props.val;
   });
@@ -507,7 +507,7 @@ test('render a context and update it', async () => {
   expect(store.getState().count).toEqual(2);
 });
 
-test('read a context with no provider', async () => {
+test('read a context with no provider', () => {
   const NumCtx = Democrat.createContext<number>(10);
 
   const Store = () => {
@@ -1068,7 +1068,7 @@ test('cannot set state on a destroyed store', async () => {
   expect(() => store.getState().setCount(0)).toThrow('Store destroyed');
 });
 
-test('cannot destroy a store twice', async () => {
+test('cannot destroy a store twice', () => {
   const Store = () => {
     const [count, setCount] = Democrat.useState(42);
     return {

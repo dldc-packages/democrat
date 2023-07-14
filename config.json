@@ -1,3 +1,4 @@
 {
+  "skipLibCheck": true, // invalid types in vite
   "react": true
 }

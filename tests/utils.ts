@@ -1,4 +1,4 @@
-import { Store } from '../src/mod';
+import type { Store } from '../src/mod';
 
 export function waitForNextState<T>(store: Store<T>): Promise<T> {
   return new Promise((res) => {
@@ -67,7 +67,7 @@ export function isPlainObject(o: unknown): o is object {
   if (isObjectObject(prot) === false) return false;
 
   // If constructor does not have an Object-specific method
-  // eslint-disable-next-line no-prototype-builtins
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   if (prot.hasOwnProperty('isPrototypeOf') === false) {
     return false;
   }

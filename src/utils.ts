@@ -1,5 +1,6 @@
 import { DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
-import {
+import type {
+  AnyFn,
   Context,
   ContextProviderProps,
   DemocratContextProvider,
@@ -235,10 +236,10 @@ export function createRootTreeElement(data: {
       reactHooksSupported = true;
       const methods = ['useState', 'useReducer', 'useEffect', 'useMemo', 'useCallback', 'useLayoutEffect', 'useRef'];
       methods.forEach((name) => {
-        const originalFn = ReactInstance[name];
+        const originalFn = ReactInstance[name] as AnyFn;
         ReactInstance[name] = (...args: Array<any>) => {
           if (isRendering()) {
-            return (hooks as any)[name](...args);
+            return (hooks[name] as AnyFn)(...args);
           }
           return originalFn(...args);
         };
@@ -314,7 +315,7 @@ export function sameMapStructure(prev: Map<any, TreeElement>, children: Map<any,
 }
 
 export function registerContextSub(instance: TreeElement<'CHILD'>, context: Context<any>): void {
-  const root = instance.root!;
+  const root = instance.root;
   if (!root.context.has(context)) {
     root.context.set(context, new Set());
   }
@@ -322,7 +323,7 @@ export function registerContextSub(instance: TreeElement<'CHILD'>, context: Cont
 }
 
 export function unregisterContextSub(instance: TreeElement<'CHILD'>, context: Context<any>): void {
-  const root = instance.root!;
+  const root = instance.root;
   if (!root.context.has(context)) {
     return;
   }
@@ -334,7 +335,7 @@ export function unregisterContextSub(instance: TreeElement<'CHILD'>, context: Co
 }
 
 export function markContextSubDirty(instance: TreeElement, context: Context<any>): void {
-  const root = instance.root!;
+  const root = instance.root;
   const ctx = root.context.get(context);
   if (ctx) {
     ctx.forEach((c) => {
@@ -382,7 +383,7 @@ export function isPlainObject(o: unknown): o is object {
   if (isObjectObject(prot) === false) return false;
 
   // If constructor does not have an Object-specific method
-  // eslint-disable-next-line no-prototype-builtins
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   if (prot.hasOwnProperty('isPrototypeOf') === false) {
     return false;
   }

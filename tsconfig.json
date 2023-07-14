@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "include": ["src", "tests"],
+  "include": ["src", "tests", "vitest.config.ts"],
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "dist",
@@ -13,6 +13,7 @@
     "jsx": "react-jsx",
     "isolatedModules": true,
     "declaration": true,
+    "skipLibCheck": true,
     "sourceMap": true,
     "noEmit": true,
     "types": [],

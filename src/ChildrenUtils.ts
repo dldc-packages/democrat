@@ -1,4 +1,4 @@
-import {
+import type {
   Context,
   EffectType,
   ElementComponent,
@@ -249,7 +249,7 @@ const CHILDREN_LIFECYCLES: {
         return tree;
       }
       // array structure has changed => create a new array TreeElement
-      const nextTree = createTreeElement('ARRAY', tree.parent!, path, {
+      const nextTree = createTreeElement('ARRAY', tree.parent, path, {
         children: [],
         value: null,
         previous: tree,
@@ -339,7 +339,7 @@ const CHILDREN_LIFECYCLES: {
         return tree;
       }
       // keys have changed => build new tree
-      const nextTree = createTreeElement('OBJECT', tree.parent!, path, {
+      const nextTree = createTreeElement('OBJECT', tree.parent, path, {
         children: {},
         value: null,
         previous: tree,
@@ -432,7 +432,7 @@ const CHILDREN_LIFECYCLES: {
         return tree;
       }
       // keys have changed
-      const nextTree = createTreeElement('MAP', tree.parent!, path, {
+      const nextTree = createTreeElement('MAP', tree.parent, path, {
         children: new Map<any, TreeElement>(),
         value: null,
         previous: tree,
@@ -609,7 +609,7 @@ function update(
 
   if (shouldUnmoutRemount) {
     // we mount the new children and flag the old one as removed
-    const nextTree = mount(element, parent!, path, undefined);
+    const nextTree = mount(element, parent, path, undefined);
     instance.state = 'removed';
     nextTree.previous = instance;
     return nextTree;

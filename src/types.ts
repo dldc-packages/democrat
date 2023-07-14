@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/ban-types */
 /* istanbul ignore next */
-import { DEMOCRAT_COMPONENT, DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
+import type { DEMOCRAT_COMPONENT, DEMOCRAT_CONTEXT, DEMOCRAT_ELEMENT, DEMOCRAT_ROOT } from './symbols';
 
 export type Dispatch<A> = (value: A) => void;
 export type SetStateAction<S> = S | ((prevState: S) => S);
 export type DependencyList = ReadonlyArray<any>;
 export type EffectCleanup = () => void | undefined;
 export type EffectCallback = () => void | EffectCleanup;
+
+export type AnyFn = (...args: any[]) => any;
 
 export interface MutableRefObject<T> {
   current: T;

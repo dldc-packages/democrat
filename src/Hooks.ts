@@ -1,7 +1,8 @@
 import { ChildrenUtils } from './ChildrenUtils';
 import { getCurrentRootInstance } from './Global';
 import { DEMOCRAT_CONTEXT } from './symbols';
-import {
+import type {
+  AnyFn,
   Children,
   Context,
   ContextHookData,
@@ -88,7 +89,6 @@ export function useReducer<R extends Reducer<any, any>>(
   initializer?: undefined,
 ): [ReducerState<R>, Dispatch<ReducerAction<R>>];
 // implementation
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function useReducer(reducer: any, initialArg: any, init?: any): [any, Dispatch<any>] {
   const root = getCurrentRootInstance();
   const hook = root.getCurrentHook();
@@ -96,6 +96,7 @@ export function useReducer(reducer: any, initialArg: any, init?: any): [any, Dis
     const instance = root.getCurrentRenderingChildInstance();
     let initialState;
     if (init !== undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       initialState = init(initialArg);
     } else {
       initialState = initialArg;
@@ -143,7 +144,7 @@ export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateA
   if (hook === null) {
     const instance = root.getCurrentRenderingChildInstance();
     const hookIndex = root.getCurrentHookIndex();
-    let value = typeof initialState === 'function' ? (initialState as any)() : initialState;
+    let value = typeof initialState === 'function' ? (initialState as AnyFn)() : initialState;
     const snapshot = instance.snapshot?.hooks[hookIndex];
     if (snapshot && snapshot.type === 'STATE') {
       value = snapshot.value;
@@ -153,7 +154,7 @@ export function useState<S>(initialState: S | (() => S)): [S, Dispatch<SetStateA
         throw new Error(`Cannot set state of an unmounted component`);
       }
       instance.root.onIdle(() => {
-        const nextValue = typeof value === 'function' ? (value as any)(stateHook.value) : value;
+        const nextValue = typeof value === 'function' ? (value as AnyFn)(stateHook.value) : value;
         if (nextValue !== stateHook.value) {
           const patch: StatePatch = {
             path: getPatchPath(instance),
