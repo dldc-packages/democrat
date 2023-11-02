@@ -1,5 +1,5 @@
 import type { Unsubscribe } from '@dldc/pubsub';
-import { Suub } from '@dldc/pubsub';
+import { PubSub } from '@dldc/pubsub';
 import { ChildrenUtils } from './ChildrenUtils';
 import { setCurrentRootInstance } from './Global';
 import * as Hooks from './Hooks';
@@ -78,8 +78,8 @@ export function createStore<C extends Children>(
 ): Store<ResolveType<C>> {
   const { ReactInstance = null, passiveMode = false, snapshot } = options;
 
-  const stateSub = Suub.createVoidSubscription();
-  const patchesSub = Suub.createSubscription<Patches>();
+  const stateSub = PubSub.createVoidSubscription();
+  const patchesSub = PubSub.createSubscription<Patches>();
 
   let state: ResolveType<C>;
   let destroyed: boolean = false;
