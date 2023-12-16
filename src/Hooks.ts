@@ -281,8 +281,8 @@ function useContextInternal<C extends Context<any>>(
   const value = provider
     ? provider.element.props.value
     : context[DEMOCRAT_CONTEXT].hasDefault
-    ? context[DEMOCRAT_CONTEXT].defaultValue
-    : undefined;
+      ? context[DEMOCRAT_CONTEXT].defaultValue
+      : undefined;
   const contextHook: ContextHookData = {
     type: 'CONTEXT',
     context,

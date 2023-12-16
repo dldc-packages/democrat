@@ -104,14 +104,14 @@ export type Children = Element<any> | null | Array<Children> | Map<any, Children
 export type ResolveType<C> = C extends Element<infer T>
   ? T
   : C extends null
-  ? null
-  : C extends Array<infer T>
-  ? Array<ResolveType<T>>
-  : C extends Map<infer K, infer V>
-  ? Map<K, ResolveType<V>>
-  : C extends { [key: string]: Children }
-  ? { [K in keyof C]: ResolveType<C[K]> }
-  : never;
+    ? null
+    : C extends Array<infer T>
+      ? Array<ResolveType<T>>
+      : C extends Map<infer K, infer V>
+        ? Map<K, ResolveType<V>>
+        : C extends { [key: string]: Children }
+          ? { [K in keyof C]: ResolveType<C[K]> }
+          : never;
 
 export interface StateHookData {
   type: 'STATE';
