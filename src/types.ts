@@ -101,17 +101,18 @@ export interface Context<T, HasDefault extends boolean = boolean> {
 
 export type Children = Element<any> | null | Array<Children> | Map<any, Children> | { [key: string]: Children };
 
-export type ResolveType<C> = C extends Element<infer T>
-  ? T
-  : C extends null
-    ? null
-    : C extends Array<infer T>
-      ? Array<ResolveType<T>>
-      : C extends Map<infer K, infer V>
-        ? Map<K, ResolveType<V>>
-        : C extends { [key: string]: Children }
-          ? { [K in keyof C]: ResolveType<C[K]> }
-          : never;
+export type ResolveType<C> =
+  C extends Element<infer T>
+    ? T
+    : C extends null
+      ? null
+      : C extends Array<infer T>
+        ? Array<ResolveType<T>>
+        : C extends Map<infer K, infer V>
+          ? Map<K, ResolveType<V>>
+          : C extends { [key: string]: Children }
+            ? { [K in keyof C]: ResolveType<C[K]> }
+            : never;
 
 export interface StateHookData {
   type: 'STATE';
@@ -307,9 +308,8 @@ export type TreeElementSnapshot<K extends TreeElementType = TreeElementType> = T
 export type Snapshot = TreeElementSnapshot<'ROOT'>;
 
 export type ReducerWithoutAction<S> = (prevState: S) => S;
-export type ReducerStateWithoutAction<R extends ReducerWithoutAction<any>> = R extends ReducerWithoutAction<infer S>
-  ? S
-  : never;
+export type ReducerStateWithoutAction<R extends ReducerWithoutAction<any>> =
+  R extends ReducerWithoutAction<infer S> ? S : never;
 export type DispatchWithoutAction = () => void;
 export type Reducer<S, A> = (prevState: S, action: A) => S;
 export type ReducerState<R extends Reducer<any, any>> = R extends Reducer<infer S, any> ? S : never;
