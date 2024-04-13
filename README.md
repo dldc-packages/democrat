@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/etienne-dldc/democrat/blob/master/design/logo.svg" width="597" alt="democrat logo">
+  <img src="https://github.com/dldc-packages/democrat/blob/0f21d98066e3549419e47bd0cf0703e262300a31/design/logo.svg" width="597" alt="democrat logo">
 </p>
 
 # 📜 democrat
