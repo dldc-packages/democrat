@@ -1,5 +1,5 @@
-import type { Unsubscribe } from '@dldc/pubsub';
-import { PubSub } from '@dldc/pubsub';
+import type { TUnsubscribe } from '@dldc/pubsub';
+import { createSubscription, createVoidSubscription } from '@dldc/pubsub';
 import { ChildrenUtils } from './ChildrenUtils';
 import { setCurrentRootInstance } from './Global';
 import * as Hooks from './Hooks';
@@ -28,10 +28,10 @@ export { createContext, createElement, isValidElement } from './utils';
 export interface Store<S> {
   render: <C extends Children>(rootChildren: C) => void;
   getState: () => S;
-  subscribe: (onChange: () => void) => Unsubscribe;
+  subscribe: (onChange: () => void) => TUnsubscribe;
   destroy: () => void;
   // patches
-  subscribePatches: (onPatches: (patches: Patches) => void) => Unsubscribe;
+  subscribePatches: (onPatches: (patches: Patches) => void) => TUnsubscribe;
   applyPatches: (patches: Patches) => void;
   // snapshot
   getSnapshot: () => Snapshot;
@@ -78,8 +78,8 @@ export function createStore<C extends Children>(
 ): Store<ResolveType<C>> {
   const { ReactInstance = null, passiveMode = false, snapshot } = options;
 
-  const stateSub = PubSub.createVoidSubscription();
-  const patchesSub = PubSub.createSubscription<Patches>();
+  const stateSub = createVoidSubscription();
+  const patchesSub = createSubscription<Patches>();
 
   let state: ResolveType<C>;
   let destroyed: boolean = false;
