@@ -3,6 +3,7 @@ import tseslint from 'typescript-eslint';
 import hooksPlugin from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
+  { ignores: ['dist', 'coverage'] },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   {
